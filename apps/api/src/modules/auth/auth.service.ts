@@ -10,10 +10,12 @@ import { ConfigService } from '@nestjs/config';
 import bcrypt from 'bcryptjs';
 import { createHash, randomBytes } from 'crypto';
 import {
+  changePasswordSchema,
   forgotPasswordSchema,
   registerAccountSchema,
   resetPasswordSchema,
   resolvePermissions,
+  updateProfileSchema,
   type Role,
 } from '@ecosphere/shared';
 import { AuthRepository } from '../../database/repositories/auth.repository';
@@ -128,6 +130,48 @@ export class AuthService {
     );
     const tokens = await this.issueTokenPair(user);
     return { user, ...tokens };
+  }
+
+  async changePassword(userId: string, body: unknown): Promise<{ success: true }> {
+    const input = changePasswordSchema.parse(body);
+    const user = await this.authRepository.findUserById(userId);
+
+    if (!user || !user.isActive) {
+      throw new NotFoundException('User account not found or is inactive.');
+    }
+
+    const passwordValid = await bcrypt.compare(input.currentPassword, user.passwordHash);
+    if (!passwordValid) {
+      throw new UnauthorizedException('Incorrect current password.');
+    }
+
+    const passwordHash = await bcrypt.hash(input.newPassword, 12);
+    await this.authRepository.updateUserPassword(user.id, passwordHash);
+
+    return { success: true };
+  }
+
+  async updateProfile(userId: string, body: unknown): Promise<{ user: AuthenticatedUser }> {
+    const input = updateProfileSchema.parse(body);
+    const user = await this.authRepository.findUserById(userId);
+
+    if (!user || !user.isActive) {
+      throw new NotFoundException('User account not found or is inactive.');
+    }
+
+    await this.authRepository.updateUserProfile(user.id, {
+      firstName: input.firstName,
+      lastName: input.lastName,
+    });
+
+    const updatedUser = await this.buildAuthenticatedUser(
+      user.id,
+      user.email,
+      input.firstName,
+      input.lastName,
+    );
+
+    return { user: updatedUser };
   }
 
   async requestPasswordReset(body: unknown): Promise<{ message: string; resetToken?: string }> {

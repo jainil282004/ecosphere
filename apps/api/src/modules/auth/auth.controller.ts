@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, Req, Res, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Patch, Post, Req, Res, UseGuards } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import type { Request, Response } from 'express';
 import { loginSchema } from '@ecosphere/shared';
@@ -84,6 +84,20 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   me(@CurrentUser() user: AuthenticatedUser) {
     return jsonApiDocument(serializeUser(user));
+  }
+
+  @Post('change-password')
+  @UseGuards(JwtAuthGuard)
+  async changePassword(@CurrentUser() user: AuthenticatedUser, @Body() body: unknown) {
+    const result = await this.authService.changePassword(user.id, body);
+    return jsonApiDocument(null, result);
+  }
+
+  @Patch('profile')
+  @UseGuards(JwtAuthGuard)
+  async updateProfile(@CurrentUser() user: AuthenticatedUser, @Body() body: unknown) {
+    const result = await this.authService.updateProfile(user.id, body);
+    return jsonApiDocument(serializeUser(result.user));
   }
 }
 

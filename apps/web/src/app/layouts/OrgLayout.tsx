@@ -290,6 +290,17 @@ export function OrgLayout() {
                     </div>
                     <button
                       type="button"
+                      className="flex w-full items-center gap-2 px-4 py-3 text-sm text-slate-300 transition hover:bg-white/[0.04] hover:text-white border-b border-white/[0.06]"
+                      onClick={() => {
+                        setUserMenuOpen(false);
+                        navigate(`/orgs/${orgId}/settings`);
+                      }}
+                    >
+                      <User className="h-4 w-4" />
+                      Account Settings
+                    </button>
+                    <button
+                      type="button"
                       className="flex w-full items-center gap-2 px-4 py-3 text-sm text-slate-300 transition hover:bg-white/[0.04] hover:text-white"
                       disabled={signingOut}
                       onClick={() => void handleSignOut()}

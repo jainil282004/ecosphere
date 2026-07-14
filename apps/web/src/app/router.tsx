@@ -15,6 +15,7 @@ import { GamificationPage } from '@/features/gamification/GamificationPage';
 import { EmployeeCornerPage } from '@/features/employee/EmployeeCornerPage';
 import { ReportsPage } from '@/features/reports/ReportsPage';
 import { AdminPage } from '@/features/admin/AdminPage';
+import { AccountSettingsPage } from '@/features/auth/AccountSettingsPage';
 import { useAuth, useOrgContext, usePermissions } from '@/hooks/useAuth';
 import { LoadingScreen } from '@/components/ui';
 
@@ -69,6 +70,7 @@ export function AppRouter() {
               <Route path="gamification" element={<GamificationPage />} />
               <Route path="reports" element={<ReportsPage />} />
               <Route path="admin" element={<AdminPage />} />
+              <Route path="settings" element={<AccountSettingsPage />} />
             </Route>
           </Route>
         </Route>

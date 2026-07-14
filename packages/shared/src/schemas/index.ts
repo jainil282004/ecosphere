@@ -25,6 +25,26 @@ export const registerAccountSchema = registerUserSchema.extend({
 
 export type RegisterAccountInput = z.infer<typeof registerAccountSchema>;
 
+export const changePasswordSchema = z
+  .object({
+    currentPassword: z.string().min(1, 'Current password is required.'),
+    newPassword: z.string().min(8, 'New password must be at least 8 characters.'),
+    confirmNewPassword: z.string(),
+  })
+  .refine((data) => data.newPassword === data.confirmNewPassword, {
+    message: "Passwords don't match.",
+    path: ['confirmNewPassword'],
+  });
+
+export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;
+
+export const updateProfileSchema = z.object({
+  firstName: z.string().min(2, 'First name must be at least 2 characters.'),
+  lastName: z.string().min(2, 'Last name must be at least 2 characters.'),
+});
+
+export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;
+
 export const forgotPasswordSchema = z.object({
   email: z.string().email('Valid email is required'),
 });

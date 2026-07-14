@@ -75,6 +75,13 @@ export class AuthRepository extends BaseRepository {
       .where(eq(users.id, userId));
   }
 
+  updateUserProfile(userId: string, data: { firstName: string; lastName: string }) {
+    return this.db
+      .update(users)
+      .set({ firstName: data.firstName, lastName: data.lastName, updatedAt: new Date() })
+      .where(eq(users.id, userId));
+  }
+
   insertPasswordResetToken(values: typeof passwordResetTokens.$inferInsert) {
     return this.db.insert(passwordResetTokens).values(values);
   }
