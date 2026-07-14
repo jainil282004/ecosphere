@@ -53,6 +53,7 @@ COPY --chown=ecosphere:ecosphere packages/shared/package.json ./packages/shared/
 COPY --from=deps --chown=ecosphere:ecosphere /app/node_modules ./node_modules
 COPY --from=deps --chown=ecosphere:ecosphere /app/apps/api/node_modules ./apps/api/node_modules
 COPY --from=deps --chown=ecosphere:ecosphere /app/packages/db/node_modules ./packages/db/node_modules
+COPY --from=deps --chown=ecosphere:ecosphere /app/packages/db-typeorm/node_modules ./packages/db-typeorm/node_modules
 COPY --from=deps --chown=ecosphere:ecosphere /app/packages/shared/node_modules ./packages/shared/node_modules
 
 COPY --from=build --chown=ecosphere:ecosphere /app/apps/api/dist ./apps/api/dist
