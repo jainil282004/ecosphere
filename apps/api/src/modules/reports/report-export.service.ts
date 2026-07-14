@@ -219,93 +219,156 @@ export class ReportExportService {
     return Buffer.from(arrayBuffer);
   }
 
+  private async fetchChartImage(config: any): Promise<Buffer> {
+    const url = `https://quickchart.io/chart?w=500&h=300&c=${encodeURIComponent(JSON.stringify(config))}`;
+    const res = await fetch(url);
+    if (!res.ok) {
+      throw new Error(`QuickChart API failed: ${res.statusText}`);
+    }
+    const arrayBuffer = await res.arrayBuffer();
+    return Buffer.from(arrayBuffer);
+  }
+
   private async toPdf(dataset: EsgReportDataset): Promise<Buffer> {
-    return new Promise((resolve, reject) => {
-      const doc = new PDFDocument({ margin: 48, size: 'A4' });
-      const chunks: Buffer[] = [];
+    return new Promise(async (resolve, reject) => {
+      try {
+        const doc = new PDFDocument({ margin: 48, size: 'A4' });
+        const chunks: Buffer[] = [];
 
-      doc.on('data', (chunk: Buffer) => chunks.push(chunk));
-      doc.on('end', () => resolve(Buffer.concat(chunks)));
-      doc.on('error', reject);
+        doc.on('data', (chunk: Buffer) => chunks.push(chunk));
+        doc.on('end', () => resolve(Buffer.concat(chunks)));
+        doc.on('error', reject);
 
-      doc.fontSize(22).fillColor('#0f766e').text('EcoSphere ESG Report', { align: 'center' });
-      doc.moveDown(0.5);
-      doc.fontSize(11).fillColor('#334155').text(dataset.meta.organizationName, { align: 'center' });
-      doc.moveDown(1.5);
+        // 1. Cover and Metadata
+        doc.fontSize(24).fillColor('#0f766e').text('EcoSphere ESG Report', { align: 'center' });
+        doc.moveDown(0.25);
+        doc.fontSize(12).fillColor('#64748b').text(dataset.meta.organizationName, { align: 'center' });
+        doc.moveDown(2);
 
-      doc.fontSize(12).fillColor('#0f172a').text('Report Metadata', { underline: true });
-      doc.moveDown(0.4);
-      doc.fontSize(10).fillColor('#475569');
-      doc.text(`Type: ${dataset.meta.reportType}`);
-      doc.text(`Period: ${dataset.meta.periodStart.slice(0, 10)} → ${dataset.meta.periodEnd.slice(0, 10)}`);
-      doc.text(`Generated: ${dataset.meta.generatedAt}`);
-      if (dataset.meta.departmentName) {
-        doc.text(`Department: ${dataset.meta.departmentName}`);
-      }
-      doc.moveDown(1);
-
-      if (dataset.scores) {
-        doc.fontSize(12).fillColor('#0f172a').text('ESG Scores', { underline: true });
-        doc.moveDown(0.4);
+        // Metadata box
+        const startY = doc.y;
+        doc.rect(48, startY, doc.page.width - 96, 80).fill('#f8fafc');
+        doc.fillColor('#0f172a').fontSize(11).text('Report Information', 60, startY + 12, { underline: true });
         doc.fontSize(10).fillColor('#475569');
-        doc.text(`Environmental: ${dataset.scores.environmental.toFixed(1)} / 100`);
-        doc.text(`Social: ${dataset.scores.social.toFixed(1)} / 100`);
-        doc.text(`Governance: ${dataset.scores.governance.toFixed(1)} / 100`);
-        doc.text(`Composite: ${dataset.scores.composite.toFixed(1)} / 100`, { underline: true });
-        doc.moveDown(1);
-      }
+        doc.text(`Type: ${dataset.meta.reportType}`, 60, startY + 30);
+        doc.text(`Period: ${dataset.meta.periodStart.slice(0, 10)} to ${dataset.meta.periodEnd.slice(0, 10)}`, 60, startY + 45);
+        doc.text(`Generated: ${dataset.meta.generatedAt.slice(0, 10)}`, 60, startY + 60);
+        doc.x = 48;
+        doc.y = startY + 100;
 
-      const section = (title: string, rows: [string, string][]) => {
-        doc.fontSize(12).fillColor('#0f172a').text(title, { underline: true });
-        doc.moveDown(0.35);
-        doc.fontSize(10).fillColor('#475569');
-        for (const [label, value] of rows) {
-          doc.text(`${label}: ${value}`);
+        // 2. Fetch Charts Concurrently
+        const [carbonTrendImg, scopeImg, scoresImg] = await Promise.all([
+          this.fetchChartImage({
+            type: 'line',
+            data: {
+              labels: dataset.environmental.carbonTrend.map((t) => t.month),
+              datasets: [{
+                label: 'Carbon Emissions (kg CO2e)',
+                data: dataset.environmental.carbonTrend.map((t) => t.totalCo2e),
+                borderColor: '#0ea5e9',
+                backgroundColor: 'rgba(14, 165, 233, 0.1)',
+                fill: true,
+                borderWidth: 2,
+              }]
+            },
+            options: { plugins: { legend: { display: false }, title: { display: true, text: 'Carbon Emissions Trend' } } }
+          }),
+          this.fetchChartImage({
+            type: 'doughnut',
+            data: {
+              labels: ['Scope 1', 'Scope 2', 'Scope 3'],
+              datasets: [{
+                data: [dataset.environmental.scope1Kg, dataset.environmental.scope2Kg, dataset.environmental.scope3Kg],
+                backgroundColor: ['#10b981', '#3b82f6', '#f59e0b']
+              }]
+            },
+            options: { plugins: { title: { display: true, text: 'Emissions by Scope' } } }
+          }),
+          dataset.scores ? this.fetchChartImage({
+            type: 'radar',
+            data: {
+              labels: ['Environmental', 'Social', 'Governance'],
+              datasets: [{
+                label: 'Score',
+                data: [dataset.scores.environmental, dataset.scores.social, dataset.scores.governance],
+                borderColor: '#8b5cf6',
+                backgroundColor: 'rgba(139, 92, 246, 0.2)',
+                borderWidth: 2,
+              }]
+            },
+            options: { scale: { ticks: { min: 0, max: 100 } }, plugins: { title: { display: true, text: 'ESG Composite Breakdown' } } }
+          }) : Promise.resolve(null)
+        ]);
+
+        // 3. Scores
+        if (scoresImg && dataset.scores) {
+          doc.fontSize(16).fillColor('#0f172a').text('Composite ESG Performance', { underline: true });
+          doc.moveDown(1);
+          
+          doc.image(scoresImg, (doc.page.width - 320) / 2, doc.y, { width: 320 });
+          doc.y += 210; // approximate height
+          
+          doc.fontSize(14).fillColor('#8b5cf6').text(`Composite Score: ${dataset.scores.composite.toFixed(1)} / 100`, { align: 'center' });
+          doc.moveDown(2);
         }
-        doc.moveDown(0.8);
-      };
 
-      section('Environmental', [
-        ['Total Carbon (kg CO₂e)', dataset.environmental.totalCarbonKg.toFixed(2)],
-        ['Scope 1 (kg)', dataset.environmental.scope1Kg.toFixed(2)],
-        ['Scope 2 (kg)', dataset.environmental.scope2Kg.toFixed(2)],
-        ['Scope 3 (kg)', dataset.environmental.scope3Kg.toFixed(2)],
-      ]);
-
-      section('Social', [
-        ['CSR Hours', dataset.social.csrHours.toFixed(2)],
-        ['Participation Rate', `${dataset.social.employeeParticipationRate}%`],
-        ['Pending Approvals', String(dataset.social.pendingApprovals)],
-      ]);
-
-      section('Governance', [
-        ['Open Compliance Issues', String(dataset.governance.openComplianceIssues)],
-        ['Resolved Issues', String(dataset.governance.resolvedIssues)],
-        [
-          'Approved Framework Submissions',
-          String(dataset.governance.frameworkSubmissions),
-        ],
-      ]);
-
-      if (dataset.variance.length) {
+        // 4. Environmental
         doc.addPage();
-        doc.fontSize(12).fillColor('#0f172a').text('Period Variance', { underline: true });
+        doc.fontSize(16).fillColor('#0f172a').text('Environmental Metrics', { underline: true });
+        doc.moveDown(1);
+        
+        doc.image(carbonTrendImg, (doc.page.width - 400) / 2, doc.y, { width: 400 });
+        doc.y += 260;
+
+        doc.image(scopeImg, (doc.page.width - 320) / 2, doc.y, { width: 320 });
+        doc.y += 220;
+        
+        doc.fontSize(11).fillColor('#475569');
+        doc.text(`Total Carbon: ${dataset.environmental.totalCarbonKg.toFixed(2)} kg CO2e`);
+        doc.text(`Scope 1: ${dataset.environmental.scope1Kg.toFixed(2)} kg`);
+        doc.text(`Scope 2: ${dataset.environmental.scope2Kg.toFixed(2)} kg`);
+        doc.text(`Scope 3: ${dataset.environmental.scope3Kg.toFixed(2)} kg`);
+
+        // 5. Social & Governance
+        doc.addPage();
+        doc.fontSize(16).fillColor('#0f172a').text('Social Metrics', { underline: true });
         doc.moveDown(0.5);
-        doc.fontSize(9).fillColor('#475569');
-        for (const v of dataset.variance) {
-          doc.text(
-            `${v.metricLabel}: ${v.currentValue.toFixed(2)} (was ${v.previousValue.toFixed(2)}, ${v.variancePercent >= 0 ? '+' : ''}${v.variancePercent.toFixed(1)}%)`,
-          );
+        doc.fontSize(11).fillColor('#475569');
+        doc.text(`CSR Hours Logged: ${dataset.social.csrHours.toFixed(2)}`);
+        doc.text(`Employee Participation Rate: ${dataset.social.employeeParticipationRate}%`);
+        doc.text(`Pending Approvals: ${dataset.social.pendingApprovals}`);
+        doc.moveDown(2);
+
+        doc.fontSize(16).fillColor('#0f172a').text('Governance Metrics', { underline: true });
+        doc.moveDown(0.5);
+        doc.fontSize(11).fillColor('#475569');
+        doc.text(`Open Compliance Issues: ${dataset.governance.openComplianceIssues}`);
+        doc.text(`Resolved Issues: ${dataset.governance.resolvedIssues}`);
+        doc.text(`Approved Framework Submissions: ${dataset.governance.frameworkSubmissions}`);
+        doc.moveDown(2);
+
+        // 6. Variance
+        if (dataset.variance.length) {
+          doc.fontSize(16).fillColor('#0f172a').text('Period Variance', { underline: true });
+          doc.moveDown(0.5);
+          for (const v of dataset.variance) {
+            doc.text(
+              `${v.metricLabel}: ${v.currentValue.toFixed(2)} (was ${v.previousValue.toFixed(2)}, ${v.variancePercent >= 0 ? '+' : ''}${v.variancePercent.toFixed(1)}%)`
+            );
+          }
         }
+
+        // Footer
+        doc.moveDown(4);
+        doc.fontSize(9).fillColor('#94a3b8').text(
+          'Generated by EcoSphere — Environmental, Social & Governance Management Platform',
+          { align: 'center' }
+        );
+
+        doc.end();
+      } catch (err) {
+        reject(err);
       }
-
-      doc.moveDown(1);
-      doc.fontSize(8).fillColor('#94a3b8').text(
-        'Generated by EcoSphere — Environmental, Social & Governance Management Platform',
-        { align: 'center' },
-      );
-
-      doc.end();
     });
   }
 }
