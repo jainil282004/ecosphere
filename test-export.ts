@@ -1,4 +1,4 @@
-import fetch from 'node-fetch';
+
 
 async function test() {
   try {
@@ -12,13 +12,7 @@ async function test() {
 
     const cookie = loginRes.headers.get('set-cookie');
     
-    const meRes = await fetch('http://localhost:3000/api/v1/users/me', {
-      headers: { 'Cookie': cookie }
-    });
-    const meBody = await meRes.json();
-    console.log('Me:', meBody);
-    
-    const orgId = meBody.data.attributes.organizationId;
+    const orgId = '90835960-9db9-4571-88e2-eccb90462e70';
     console.log('Org ID:', orgId);
 
     const exportRes = await fetch(`http://localhost:3000/api/v1/orgs/${orgId}/reports/export`, {
