@@ -115,7 +115,7 @@ export class LedgerRepository extends BaseRepository {
       .innerJoin(users, eq(xpLedger.userId, users.id))
       .where(eq(xpLedger.organizationId, orgId))
       .groupBy(xpLedger.userId, users.firstName, users.lastName)
-      .orderBy(sql`total_xp DESC`)
+      .orderBy(sql`COALESCE(SUM(CASE WHEN ${xpLedger.entryType} = 'credit' THEN ${xpLedger.amount} ELSE -${xpLedger.amount} END), 0) DESC`)
       .limit(20);
   }
 
