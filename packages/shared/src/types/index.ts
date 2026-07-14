@@ -1,4 +1,17 @@
-import type { ApprovalStatus, Permission, Role } from '../constants/roles.js';
+import type { ApprovalStatus, NotificationType, Permission, Role } from '../constants/roles.js';
+
+export interface NotificationRecord {
+  id: string;
+  organizationId: string;
+  userId: string;
+  type: NotificationType;
+  title: string;
+  body: string;
+  entityType: string | null;
+  entityId: string | null;
+  isRead: boolean;
+  createdAt: string;
+}
 
 export interface AuthUser {
   id: string;

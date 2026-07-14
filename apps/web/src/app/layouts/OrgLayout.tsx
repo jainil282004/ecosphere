@@ -1,7 +1,6 @@
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import {
   Award,
-  Bell,
   Building2,
   CheckSquare,
   ChevronDown,
@@ -18,6 +17,7 @@ import {
   User,
   X,
 } from 'lucide-react';
+import { NotificationDropdown } from '@/components/ui';
 import clsx from 'clsx';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useAuth, useOrgContext, usePermissions } from '@/hooks/useAuth';
@@ -257,17 +257,9 @@ export function OrgLayout() {
                   <Command className="h-2.5 w-2.5" /> K
                 </span>
               </button>
-
-              <button
-                type="button"
-                className="relative rounded-xl border border-white/10 bg-white/[0.03] p-2 text-slate-300 hover:border-brand-400/40 hover:text-white"
-                aria-label="Notifications"
-                onClick={() => (orgId ? navigate(`/orgs/${orgId}/employee-corner`) : undefined)}
-              >
-                <Bell className="h-4 w-4" />
-                <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-brand-400 ring-2 ring-surface-950" />
-              </button>
-
+            </div>
+            <div className="flex items-center gap-2 pr-4 lg:pr-8">
+              {orgId && <NotificationDropdown orgId={orgId} />}
               <div className="relative" ref={userMenuRef}>
                 <button
                   type="button"

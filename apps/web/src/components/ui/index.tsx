@@ -579,3 +579,5 @@ export function Section({
     </section>
   );
 }
+
+export * from './NotificationDropdown';
