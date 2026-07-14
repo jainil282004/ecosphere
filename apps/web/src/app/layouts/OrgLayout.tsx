@@ -18,6 +18,7 @@ import {
   X,
 } from 'lucide-react';
 import { NotificationDropdown } from '@/components/ui';
+import { AIAssistant } from '@/components/ui';
 import clsx from 'clsx';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useAuth, useOrgContext, usePermissions } from '@/hooks/useAuth';
@@ -312,6 +313,7 @@ export function OrgLayout() {
             <Outlet />
           </div>
         </main>
+        {orgId && <AIAssistant />}
       </div>
     </div>
   );

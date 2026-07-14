@@ -581,3 +581,4 @@ export function Section({
 }
 
 export * from './NotificationDropdown';
+export * from './AIAssistant';
