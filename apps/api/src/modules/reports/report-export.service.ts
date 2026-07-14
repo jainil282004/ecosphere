@@ -220,18 +220,18 @@ export class ReportExportService {
     return Buffer.from(arrayBuffer);
   }
 
-  private async fetchChartImage(config: any): Promise<Buffer> {
+  private async fetchChartImage(config: any): Promise<Buffer | null> {
     const url = `https://quickchart.io/chart?w=500&h=300&c=${encodeURIComponent(JSON.stringify(config))}`;
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
       https.get(url, (res) => {
         if (res.statusCode !== 200) {
-          reject(new Error(`QuickChart API failed: ${res.statusCode} ${res.statusMessage}`));
+          resolve(null);
           return;
         }
         const data: Buffer[] = [];
         res.on('data', (chunk) => data.push(chunk));
         res.on('end', () => resolve(Buffer.concat(data)));
-      }).on('error', reject);
+      }).on('error', () => resolve(null));
     });
   }
 
@@ -323,11 +323,15 @@ export class ReportExportService {
         doc.fontSize(16).fillColor('#0f172a').text('Environmental Metrics', { underline: true });
         doc.moveDown(1);
         
-        doc.image(carbonTrendImg, (doc.page.width - 400) / 2, doc.y, { width: 400 });
-        doc.y += 260;
+        if (carbonTrendImg) {
+          doc.image(carbonTrendImg, (doc.page.width - 400) / 2, doc.y, { width: 400 });
+          doc.y += 260;
+        }
 
-        doc.image(scopeImg, (doc.page.width - 320) / 2, doc.y, { width: 320 });
-        doc.y += 220;
+        if (scopeImg) {
+          doc.image(scopeImg, (doc.page.width - 320) / 2, doc.y, { width: 320 });
+          doc.y += 220;
+        }
         
         doc.fontSize(11).fillColor('#475569');
         doc.text(`Total Carbon: ${dataset.environmental.totalCarbonKg.toFixed(2)} kg CO2e`);

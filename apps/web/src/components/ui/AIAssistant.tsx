@@ -31,6 +31,7 @@ const generateMockResponse = (input: string): string => {
 
 export function AIAssistant() {
   const [isOpen, setIsOpen] = useState(false);
+  const [isDismissed, setIsDismissed] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
@@ -77,16 +78,38 @@ export function AIAssistant() {
     }, 1000);
   };
 
+  if (isDismissed) return null;
+
   if (!isOpen) {
     return (
-      <button
-        type="button"
-        onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-brand-500 shadow-[0_0_20px_rgba(34,197,94,0.4)] transition hover:scale-105 hover:bg-brand-400"
-        aria-label="Open AI Assistant"
-      >
-        <Sparkles className="h-6 w-6 text-white" />
-      </button>
+      <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-2">
+        <button
+          type="button"
+          onClick={() => setIsDismissed(true)}
+          className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-800 text-slate-400 opacity-0 shadow-sm transition hover:bg-slate-700 hover:text-white group-hover:opacity-100"
+          aria-label="Dismiss AI Assistant"
+        >
+          <X className="h-3.5 w-3.5" />
+        </button>
+        <div className="group relative">
+          <button
+            type="button"
+            onClick={() => setIsDismissed(true)}
+            className="absolute -right-2 -top-2 z-10 flex h-6 w-6 items-center justify-center rounded-full border border-white/10 bg-slate-800 text-slate-400 opacity-0 shadow-sm transition hover:bg-slate-700 hover:text-white group-hover:opacity-100"
+            aria-label="Dismiss AI Assistant"
+          >
+            <X className="h-3 w-3" />
+          </button>
+          <button
+            type="button"
+            onClick={() => setIsOpen(true)}
+            className="flex h-14 w-14 items-center justify-center rounded-full bg-brand-500 shadow-[0_0_20px_rgba(34,197,94,0.4)] transition hover:scale-105 hover:bg-brand-400"
+            aria-label="Open AI Assistant"
+          >
+            <Sparkles className="h-6 w-6 text-white" />
+          </button>
+        </div>
+      </div>
     );
   }
 

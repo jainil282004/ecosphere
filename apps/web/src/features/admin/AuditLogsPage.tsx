@@ -12,7 +12,7 @@ export function AuditLogsPage() {
   const { data: logs, isLoading } = useQuery({
     queryKey: [...queryKeys.governance.auditLogs(orgId!), 'all'],
     queryFn: () =>
-      apiClient<{ data: AuditLogRecord[]; meta: any }>(`/orgs/${orgId}/governance/audit-logs?limit=50`),
+      apiClient<AuditLogRecord[]>(`/orgs/${orgId}/governance/audit-logs?limit=50`),
     enabled: Boolean(orgId),
   });
 
@@ -31,7 +31,7 @@ export function AuditLogsPage() {
       </header>
 
       <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-6 shadow-panel">
-        {logs?.data?.length === 0 ? (
+        {logs?.length === 0 ? (
           <div className="py-12 text-center text-slate-400">
             <Monitor className="mx-auto h-8 w-8 mb-3 opacity-50" />
             <p>No audit logs recorded yet.</p>
@@ -48,7 +48,7 @@ export function AuditLogsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/[0.06]">
-                {logs?.data.map((log) => (
+                {logs?.map((log) => (
                   <tr key={log.id} className="transition hover:bg-white/[0.02]">
                     <td className="py-4 pr-4 whitespace-nowrap">
                       <div className="flex items-center gap-2 text-slate-300">

@@ -228,17 +228,21 @@ export class ReportsService {
 
     const ext = parsedFormat === 'xlsx' ? 'xlsx' : parsedFormat;
     if (report.fileKey?.endsWith(`.${ext}`)) {
-      const buffer = await this.reportStorageService.read(report.fileKey);
-      const dataset = await this.buildReportDataset(orgId, {
-        reportType: report.reportType,
-        periodStart: report.periodStart,
-        periodEnd: report.periodEnd,
-      });
-      return {
-        buffer,
-        filename: this.reportExportService.buildFilename(dataset, parsedFormat),
-        mimeType: EXPORT_MIME[parsedFormat],
-      };
+      try {
+        const buffer = await this.reportStorageService.read(report.fileKey);
+        const dataset = await this.buildReportDataset(orgId, {
+          reportType: report.reportType,
+          periodStart: report.periodStart,
+          periodEnd: report.periodEnd,
+        });
+        return {
+          buffer,
+          filename: this.reportExportService.buildFilename(dataset, parsedFormat),
+          mimeType: EXPORT_MIME[parsedFormat],
+        };
+      } catch (err) {
+        // Ignore read errors (like ENOENT) and fall back to regenerating the file
+      }
     }
 
     const dataset = await this.buildReportDataset(orgId, {

@@ -153,6 +153,9 @@ export function ReportsPage() {
       });
       triggerBrowserDownload(blob, filename);
       queryClient.invalidateQueries({ queryKey: queryKeys.reports.list(orgId) });
+    } catch (err) {
+      console.error('Export error:', err);
+      alert(err instanceof Error ? err.message : 'Export failed.');
     } finally {
       setExportingFormat(null);
     }
@@ -167,6 +170,9 @@ export function ReportsPage() {
         { params: { format } },
       );
       triggerBrowserDownload(blob, filename);
+    } catch (err) {
+      console.error('Download error:', err);
+      alert(err instanceof Error ? err.message : 'Download failed.');
     } finally {
       setExportingFormat(null);
     }
@@ -336,7 +342,12 @@ export function ReportsPage() {
                             orgId &&
                             apiDownload(`/orgs/${orgId}/reports/pipeline/${job.id}/export`, {
                               params: { format: value },
-                            }).then(({ blob, filename }) => triggerBrowserDownload(blob, filename))
+                            })
+                              .then(({ blob, filename }) => triggerBrowserDownload(blob, filename))
+                              .catch((err) => {
+                                console.error('Pipeline export error:', err);
+                                alert(err instanceof Error ? err.message : 'Pipeline export failed.');
+                              })
                           }
                         >
                           <Icon className="h-3.5 w-3.5" /> {label}
