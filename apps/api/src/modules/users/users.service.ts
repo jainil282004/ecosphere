@@ -119,6 +119,56 @@ export class UsersService {
     return assignment;
   }
 
+  async createEmployee(orgId: string, actor: AuthenticatedUser, body: unknown) {
+    const { createEmployeeSchema } = await import('@ecosphere/shared');
+    const input = createEmployeeSchema.parse(body);
+
+    const actorRoles = actor.roles.map((assignment) => assignment.role);
+    if (!canAssignInternalRole(actorRoles, input.role)) {
+      throw new ForbiddenException(
+        'Vertical privilege escalation blocked: insufficient tier to assign this role.',
+      );
+    }
+
+    let user = await this.tenantRepository.findUserByEmail(input.email);
+
+    if (!user) {
+      const bcrypt = await import('bcryptjs');
+      const passwordHash = await bcrypt.hash('Password123!', 12);
+      const [createdUser] = await this.tenantRepository.createUser({
+        email: input.email,
+        firstName: input.firstName,
+        lastName: input.lastName,
+        passwordHash,
+      });
+      user = createdUser;
+    }
+
+    if (!user) {
+      throw new Error('Failed to create or locate user.');
+    }
+
+    // Assign the requested role
+    await this.tenantRepository.assignRole({
+      userId: user.id,
+      role: input.role,
+      organizationId: orgId,
+      departmentId: input.departmentId ?? null,
+    });
+
+    // Also assign base employee role if they are getting a higher role
+    if (input.role !== 'employee') {
+      await this.tenantRepository.assignRole({
+        userId: user.id,
+        role: 'employee',
+        organizationId: orgId,
+        departmentId: input.departmentId ?? null,
+      });
+    }
+
+    return user;
+  }
+
   async getMeInOrg(orgId: string, userId: string) {
     const userRows = await this.tenantRepository.findUsersByIds([userId]);
     const user = userRows[0] ?? null;

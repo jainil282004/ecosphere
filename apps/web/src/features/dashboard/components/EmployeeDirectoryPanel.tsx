@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { Briefcase, Gift, Mail, Sparkles, Users } from 'lucide-react';
+import { Briefcase, Gift, Mail, Sparkles, Users, UserPlus } from 'lucide-react';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Card, Button } from '@/components/ui';
@@ -7,6 +7,7 @@ import { apiClient } from '@/lib/api-client';
 import { queryKeys } from '@/lib/query-keys';
 import { usePermissions } from '@/hooks/useAuth';
 import { AwardXpModal } from './AwardXpModal';
+import { AddEmployeeModal } from './AddEmployeeModal';
 
 export interface EmployeeDirectoryEntry {
   id: string;
@@ -24,11 +25,20 @@ function formatRole(role: string) {
 export function EmployeeDirectoryPanel({ orgId }: { orgId: string }) {
   const { can } = usePermissions();
   const [awardTarget, setAwardTarget] = useState<EmployeeDirectoryEntry | null>(null);
+  const [isAddEmployeeOpen, setIsAddEmployeeOpen] = useState(false);
   const canAward = can('approve_submissions') || can('manage_users');
+  const canManageUsers = can('manage_users');
 
   const directoryQuery = useQuery({
     queryKey: queryKeys.users.directory(orgId),
     queryFn: () => apiClient<EmployeeDirectoryEntry[]>(`/orgs/${orgId}/users/directory`),
+    enabled: Boolean(orgId),
+  });
+
+  const departmentsQuery = useQuery({
+    queryKey: queryKeys.departments(orgId),
+    queryFn: () =>
+      apiClient<Array<{ id: string; name: string; code: string }>>(`/orgs/${orgId}/departments`),
     enabled: Boolean(orgId),
   });
 
@@ -47,7 +57,15 @@ export function EmployeeDirectoryPanel({ orgId }: { orgId: string }) {
               Click a team member to view their corner or award XP after review.
             </p>
           </div>
-          <span className="accent-pill">{employees.length} people</span>
+          <div className="flex items-center gap-3">
+            <span className="accent-pill">{employees.length} people</span>
+            {canManageUsers ? (
+              <Button size="sm" onClick={() => setIsAddEmployeeOpen(true)}>
+                <UserPlus className="mr-1.5 h-4 w-4" />
+                Add Employee
+              </Button>
+            ) : null}
+          </div>
         </header>
 
         <div className="mt-6 space-y-3">
@@ -122,6 +140,14 @@ export function EmployeeDirectoryPanel({ orgId }: { orgId: string }) {
           orgId={orgId}
           employee={awardTarget}
           onClose={() => setAwardTarget(null)}
+        />
+      ) : null}
+
+      {isAddEmployeeOpen ? (
+        <AddEmployeeModal
+          orgId={orgId}
+          departments={departmentsQuery.data ?? []}
+          onClose={() => setIsAddEmployeeOpen(false)}
         />
       ) : null}
     </>

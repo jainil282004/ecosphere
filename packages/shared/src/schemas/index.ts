@@ -78,6 +78,16 @@ export const assignRoleSchema = z.object({
 
 export type AssignRoleInput = z.infer<typeof assignRoleSchema>;
 
+export const createEmployeeSchema = z.object({
+  email: z.string().email(),
+  firstName: z.string().min(1).max(100),
+  lastName: z.string().min(1).max(100),
+  role: z.enum(ROLES),
+  departmentId: z.string().uuid().nullable().optional(),
+});
+
+export type CreateEmployeeInput = z.infer<typeof createEmployeeSchema>;
+
 export const createDepartmentSchema = z.object({
   name: z.string().min(1).max(150),
   code: z.string().min(1).max(50),

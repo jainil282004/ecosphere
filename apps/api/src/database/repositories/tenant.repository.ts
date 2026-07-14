@@ -47,6 +47,16 @@ export class TenantRepository extends BaseRepository {
     });
   }
 
+  findUserByEmail(email: string) {
+    return this.db.query.users.findFirst({
+      where: eq(users.email, email),
+    });
+  }
+
+  createUser(values: typeof users.$inferInsert) {
+    return this.db.insert(users).values(values).returning();
+  }
+
   assignRole(values: typeof userRoles.$inferInsert) {
     return this.db.insert(userRoles).values(values).onConflictDoNothing().returning();
   }

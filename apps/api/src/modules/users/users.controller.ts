@@ -99,9 +99,18 @@ export class UsersController {
   ) {
 
     return this.usersService.assignRole(orgId, user, body);
-
   }
 
+  /**
+   * Vertical guard: manage_users permission only.
+   */
+  @Post()
+  @RequirePermissions('manage_users')
+  createEmployee(
+    @Param('orgId') orgId: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() body: unknown,
+  ) {
+    return this.usersService.createEmployee(orgId, user, body);
+  }
 }
-
-
