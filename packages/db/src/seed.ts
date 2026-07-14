@@ -87,6 +87,13 @@ async function seed() {
 
   const orgUsers = [
     {
+      email: 'jainil@greentech.io',
+      firstName: 'Jainil',
+      lastName: 'CEO',
+      role: 'org_admin' as const,
+      departmentCode: null,
+    },
+    {
       email: 'orgadmin@greentech.io',
       firstName: 'Olivia',
       lastName: 'Admin',
@@ -756,6 +763,7 @@ async function seed() {
   console.log('');
   console.log('Demo credentials (password for all): Password123!');
   console.log('  superadmin@ecosphere.io     — Super Admin');
+  console.log('  jainil@greentech.io         — CEO (Organization Admin)');
   console.log('  orgadmin@greentech.io       — Organization Admin');
   console.log('  esgmanager@greentech.io     — ESG Manager');
   console.log('  depthead@greentech.io       — Department Head + Employee');
