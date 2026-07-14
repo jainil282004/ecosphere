@@ -66,7 +66,7 @@ export function GamificationPage() {
           <h2 className="text-lg font-semibold text-white">Badges</h2>
           <div className="mt-4 space-y-3">
             {profile?.badges.length ? (
-              profile.badges.map((badge) => (
+              profile.badges.map((badge: any) => (
                 <div
                   key={badge.id}
                   className="rounded-xl border border-brand-500/20 bg-brand-500/5 px-4 py-3"

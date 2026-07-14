@@ -336,7 +336,7 @@ export function EmployeeCornerPage() {
         <Card>
           <h2 className="h-section">Your badges</h2>
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
-            {profile.badges.map((badge) => (
+            {profile.badges.map((badge: any) => (
               <div
                 key={badge.id}
                 className="rounded-xl border border-brand-500/15 bg-brand-500/5 px-4 py-3"
