@@ -24,7 +24,9 @@ async function test() {
     if (!exportRes.ok) {
       console.error('Export failed:', exportRes.status, await exportRes.text());
     } else {
-      console.log('Export succeeded!');
+      const buffer = await exportRes.arrayBuffer();
+      require('fs').writeFileSync('test-output.pdf', Buffer.from(buffer));
+      console.log('Export succeeded! Saved to test-output.pdf. Size:', buffer.byteLength);
     }
   } catch (e) {
     console.error(e);
