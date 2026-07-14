@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import * as https from 'https';
 import ExcelJS from 'exceljs';
 import PDFDocument from 'pdfkit';
 import type { ReportExportFormat } from '@ecosphere/shared';
@@ -221,12 +222,17 @@ export class ReportExportService {
 
   private async fetchChartImage(config: any): Promise<Buffer> {
     const url = `https://quickchart.io/chart?w=500&h=300&c=${encodeURIComponent(JSON.stringify(config))}`;
-    const res = await fetch(url);
-    if (!res.ok) {
-      throw new Error(`QuickChart API failed: ${res.statusText}`);
-    }
-    const arrayBuffer = await res.arrayBuffer();
-    return Buffer.from(arrayBuffer);
+    return new Promise((resolve, reject) => {
+      https.get(url, (res) => {
+        if (res.statusCode !== 200) {
+          reject(new Error(`QuickChart API failed: ${res.statusCode} ${res.statusMessage}`));
+          return;
+        }
+        const data: Buffer[] = [];
+        res.on('data', (chunk) => data.push(chunk));
+        res.on('end', () => resolve(Buffer.concat(data)));
+      }).on('error', reject);
+    });
   }
 
   private async toPdf(dataset: EsgReportDataset): Promise<Buffer> {
