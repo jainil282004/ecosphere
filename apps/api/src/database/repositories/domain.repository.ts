@@ -143,7 +143,7 @@ export class DomainRepository extends BaseRepository {
   }
 
   insertAuditLog(values: typeof auditLogs.$inferInsert) {
-    return this.db.insert(auditLogs).values(values);
+    return this.db.insert(auditLogs).values(values).returning();
   }
 
   listAuditLogs(orgId: string, limit: number, offset: number) {
@@ -152,6 +152,16 @@ export class DomainRepository extends BaseRepository {
       orderBy: [desc(auditLogs.createdAt)],
       limit,
       offset,
+      with: {
+        user: {
+          columns: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+          },
+        },
+      },
     });
   }
 

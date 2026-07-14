@@ -5,6 +5,7 @@ import {
   complianceIssues,
   policies,
   policyAcknowledgements,
+  auditLogs,
 } from '@ecosphere/db';
 import { BaseRepository } from './base.repository';
 
@@ -58,5 +59,17 @@ export class GovernanceRepository extends BaseRepository {
 
   acknowledgePolicy(values: typeof policyAcknowledgements.$inferInsert) {
     return this.db.insert(policyAcknowledgements).values(values).onConflictDoNothing().returning();
+  }
+
+  listAuditLogs(orgId: string) {
+    return this.db.query.auditLogs.findMany({
+      where: eq(auditLogs.organizationId, orgId),
+      orderBy: [desc(auditLogs.createdAt)],
+      limit: 100, // Reasonable limit for now
+    });
+  }
+
+  createAuditLog(values: typeof auditLogs.$inferInsert) {
+    return this.db.insert(auditLogs).values(values).returning();
   }
 }

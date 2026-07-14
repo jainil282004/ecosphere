@@ -13,6 +13,22 @@ export interface NotificationRecord {
   createdAt: string;
 }
 
+export interface AuditLogRecord {
+  id: string;
+  organizationId: string;
+  userId: string;
+  user: {
+    firstName: string;
+    lastName: string;
+    email: string;
+  };
+  action: string;
+  details: Record<string, any> | null;
+  ipAddress: string | null;
+  userAgent: string | null;
+  createdAt: string;
+}
+
 export interface AuthUser {
   id: string;
   email: string;

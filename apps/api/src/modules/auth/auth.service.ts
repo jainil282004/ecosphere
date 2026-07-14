@@ -26,10 +26,13 @@ export interface TokenPair {
   refreshToken: string;
 }
 
+import { DomainRepository } from '../../database/repositories/domain.repository';
+
 @Injectable()
 export class AuthService {
   constructor(
     private readonly authRepository: AuthRepository,
+    private readonly domainRepository: DomainRepository,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
   ) {}
@@ -80,6 +83,20 @@ export class AuthService {
     const user = await this.validateUser(email, password);
     if (!user) {
       throw new UnauthorizedException('Invalid email or password.');
+    }
+
+    const uniqueOrgIds = Array.from(new Set(user.roles.map((r) => r.organizationId)));
+    for (const orgId of uniqueOrgIds) {
+      if (orgId) {
+        await this.domainRepository.insertAuditLog({
+          organizationId: orgId,
+          actorUserId: user.id,
+          action: 'User Login',
+          entityType: 'user',
+          entityId: user.id,
+          metadata: { email: user.email },
+        });
+      }
     }
 
     const tokens = await this.issueTokenPair(user);

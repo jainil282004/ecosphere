@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { Building2, FileDown } from 'lucide-react';
+import { Building2, FileDown, ShieldAlert } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useOrgContext } from '@/hooks/useAuth';
 import { apiClient } from '@/lib/api-client';
@@ -58,6 +58,26 @@ export function AdminPage() {
                 description="Add departments to organize teams and assign ESG owners."
               />
             )}
+          </div>
+        </Card>
+
+        <Card>
+          <div className="flex items-center gap-2">
+            <ShieldAlert className="h-5 w-5 text-red-400" />
+            <h2 className="h-section">CEO Security Controls</h2>
+          </div>
+          <p className="mt-1 text-sm text-slate-400">Strictly confidential organization logs.</p>
+          <div className="mt-5 space-y-2">
+            <Link
+              to={`/orgs/${orgId}/admin/audit-logs`}
+              className="flex items-center justify-between rounded-lg border border-red-500/10 bg-red-500/5 p-4 transition hover:bg-red-500/10"
+            >
+              <div>
+                <p className="font-medium text-white">System Audit Logs</p>
+                <p className="text-sm text-slate-400">Monitor all logins and employee actions.</p>
+              </div>
+              <span className="chip-brand">View Logs &rarr;</span>
+            </Link>
           </div>
         </Card>
 

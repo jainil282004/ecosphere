@@ -1049,3 +1049,14 @@ export const departmentsRelations = relations(departments, ({ one, many }) => ({
   }),
   csrActivities: many(csrActivities),
 }));
+
+export const auditLogsRelations = relations(auditLogs, ({ one }) => ({
+  organization: one(organizations, {
+    fields: [auditLogs.organizationId],
+    references: [organizations.id],
+  }),
+  user: one(users, {
+    fields: [auditLogs.actorUserId],
+    references: [users.id],
+  }),
+}));
