@@ -5,17 +5,17 @@ DATABASE_URL="${DATABASE_URL:-postgresql://ecosphere:ecosphere_secret@postgres:5
 export DATABASE_URL
 
 echo "[ecosphere] Waiting for PostgreSQL..."
-pnpm --filter @ecosphere/db wait
+node packages/db/dist/wait-for-postgres.js
 
 echo "[ecosphere] Applying Drizzle schema migrations..."
-pnpm --filter @ecosphere/db migrate
+node packages/db/dist/migrate.js
 
 echo "[ecosphere] Synchronizing TypeORM migration state..."
-pnpm --filter @ecosphere/db-typeorm migrate
+node packages/db-typeorm/dist/migrate.js
 
 if [ "${ECOSPHERE_SEED_ON_START:-false}" = "true" ]; then
   echo "[ecosphere] Seeding database..."
-  pnpm --filter @ecosphere/db seed
+  node packages/db/dist/seed.js
 fi
 
 echo "[ecosphere] Starting API..."
