@@ -70,7 +70,13 @@ export function AuditLogsPage() {
                       </div>
                     </td>
                     <td className="py-4 pr-4">
-                      <span className="inline-flex items-center gap-1.5 rounded-full border border-brand-400/20 bg-brand-500/10 px-2.5 py-1 text-xs font-medium text-brand-300">
+                      <span
+                        className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium ${
+                          log.action === 'Failed Login'
+                            ? 'border-red-400/20 bg-red-500/10 text-red-400'
+                            : 'border-brand-400/20 bg-brand-500/10 text-brand-300'
+                        }`}
+                      >
                         <Activity className="h-3 w-3" />
                         {log.action}
                       </span>

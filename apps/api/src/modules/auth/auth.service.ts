@@ -82,6 +82,24 @@ export class AuthService {
   async login(email: string, password: string): Promise<{ user: AuthenticatedUser } & TokenPair> {
     const user = await this.validateUser(email, password);
     if (!user) {
+      // Record failed login attempt if the user exists
+      const existingUser = await this.authRepository.findActiveUserByEmail(email);
+      if (existingUser) {
+        const roleRows = await this.authRepository.findActiveRolesByUserId(existingUser.id);
+        const uniqueOrgIds = Array.from(new Set(roleRows.map((r) => r.organizationId)));
+        for (const orgId of uniqueOrgIds) {
+          if (orgId) {
+            await this.domainRepository.insertAuditLog({
+              organizationId: orgId,
+              actorUserId: existingUser.id,
+              action: 'Failed Login',
+              entityType: 'user',
+              entityId: existingUser.id,
+              metadata: { email, reason: 'Invalid password' },
+            });
+          }
+        }
+      }
       throw new UnauthorizedException('Invalid email or password.');
     }
 
