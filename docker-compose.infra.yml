@@ -1,0 +1,52 @@
+# EcoSphere local development infrastructure — PostgreSQL + Redis only
+# Used by `pnpm up`, `pnpm infra:up`, and dev/staging compose overlays.
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: ecosphere-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-ecosphere}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ecosphere_secret}
+      POSTGRES_DB: ${POSTGRES_DB:-ecosphere}
+    ports:
+      - "${POSTGRES_PUBLISHED_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./infra/postgres/postgresql.conf:/etc/postgresql/postgresql.conf:ro
+    command: postgres -c config_file=/etc/postgresql/postgresql.conf
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-ecosphere} -d ${POSTGRES_DB:-ecosphere}"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+    networks:
+      - ecosphere_net
+
+  redis:
+    image: redis:7-alpine
+    container_name: ecosphere-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    ports:
+      - "${REDIS_PUBLISHED_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 5s
+    networks:
+      - ecosphere_net
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  ecosphere_net:
+    driver: bridge

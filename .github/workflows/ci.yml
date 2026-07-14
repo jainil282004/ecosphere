@@ -1,0 +1,130 @@
+name: EcoSphere CI
+
+on:
+  push:
+    branches: [main, master, develop]
+  pull_request:
+    branches: [main, master, develop]
+
+env:
+  NODE_VERSION: "22"
+  PNPM_VERSION: "9.15.0"
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+
+  typecheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck
+
+  build:
+    runs-on: ubuntu-latest
+    needs: [lint, typecheck]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+
+  integration:
+    runs-on: ubuntu-latest
+    needs: build
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: ecosphere
+          POSTGRES_PASSWORD: ecosphere_secret
+          POSTGRES_DB: ecosphere
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ecosphere -d ecosphere"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - name: Drizzle migrations
+        env:
+          DATABASE_URL: postgresql://ecosphere:ecosphere_secret@localhost:5432/ecosphere
+        run: pnpm db:migrate
+      - name: TypeORM migration state
+        env:
+          DATABASE_URL: postgresql://ecosphere:ecosphere_secret@localhost:5432/ecosphere
+        run: pnpm db:typeorm:migrate
+      - name: Seed database
+        env:
+          DATABASE_URL: postgresql://ecosphere:ecosphere_secret@localhost:5432/ecosphere
+        run: pnpm db:seed
+      - name: API health smoke test
+        env:
+          DATABASE_URL: postgresql://ecosphere:ecosphere_secret@localhost:5432/ecosphere
+          REDIS_URL: redis://localhost:6379
+          JWT_ACCESS_SECRET: ci-access-secret-min-32-characters-long!!
+          JWT_REFRESH_SECRET: ci-refresh-secret-min-32-characters-long!!
+          COOKIE_SECURE: "false"
+        run: |
+          pnpm --filter @ecosphere/api start &
+          sleep 10
+          curl -fsS http://localhost:3000/api/v1/health
+          curl -fsS http://localhost:3000/api/v1/health/ready
+
+  docker-build:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build API image
+        run: docker build -f Dockerfile -t ecosphere-api:ci .
+      - name: Build Nginx gateway image
+        run: docker build -f docker/Dockerfile.nginx -t ecosphere-nginx:ci .
+      - name: Build Migrate image
+        run: docker build -f docker/Dockerfile.migrate -t ecosphere-migrate:ci .

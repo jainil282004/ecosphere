@@ -1,0 +1,52 @@
+EcoSphere ESG Management Platform — Report Export
+"Organization","GreenTech Industries"
+"Report Type","esg_summary"
+"Period Start","2026-04-14T00:00:00.000Z"
+"Period End","2026-07-14T18:29:59.000Z"
+"Generated At","2026-07-14T06:36:28.128Z"
+
+ESG SCORES
+"Pillar","Score"
+"Environmental","100.00"
+"Social","83.00"
+"Governance","0.00"
+"Composite","69.05"
+
+ENVIRONMENTAL
+"Metric","Value"
+"Total Carbon (kg CO₂e)","0.00"
+"Scope 1 (kg)","0.00"
+"Scope 2 (kg)","0.00"
+"Scope 3 (kg)","0.00"
+
+CARBON TREND
+"Month","CO₂e (kg)"
+"2026-01","3444.00"
+"2026-02","415.80"
+"2026-03","480.00"
+"2026-04","3198.00"
+"2026-05","765.00"
+
+SOCIAL
+"Metric","Value"
+"CSR Hours","41.50"
+"Participation Rate (%)","50"
+"Pending Approvals","0"
+
+GOVERNANCE
+"Metric","Value"
+"Open Compliance Issues","0"
+"Resolved Issues","0"
+"Approved Framework Submissions","0"
+
+VARIANCE
+"Metric","Current","Previous","Variance %"
+"Composite ESG Score","69.05","0.00","100.00"
+"CSR Hours","41.50","0.00","100.00"
+"Carbon Footprint (kg)","0.00","0.00","0.00"
+
+DEPARTMENTS
+"Name","Code"
+"Engineering","ENG"
+"Human Resources","HR"
+"Operations","OPS"

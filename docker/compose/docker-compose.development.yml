@@ -1,0 +1,87 @@
+# Development overlay — hot reload on host, containerized data layer only by default
+
+services:
+  postgres:
+    ports:
+      - "${POSTGRES_PUBLISHED_PORT:-5432}:5432"
+
+  redis:
+    ports:
+      - "${REDIS_PUBLISHED_PORT:-6379}:6379"
+
+  migrate:
+    profiles: ["full-stack"]
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.migrate
+    container_name: ecosphere-migrate-dev
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-ecosphere}:${POSTGRES_PASSWORD:-ecosphere_secret}@postgres:5432/${POSTGRES_DB:-ecosphere}
+      ECOSPHERE_SEED_ON_MIGRATE: "${ECOSPHERE_SEED_ON_MIGRATE:-true}"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - ecosphere_net
+    restart: "no"
+
+  api:
+    profiles: ["full-stack"]
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ecosphere-api-dev
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: postgresql://${POSTGRES_USER:-ecosphere}:${POSTGRES_PASSWORD:-ecosphere_secret}@postgres:5432/${POSTGRES_DB:-ecosphere}
+      REDIS_URL: redis://redis:6379
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-change-me-access-secret-min-32-chars-long!!}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-change-me-refresh-secret-min-32-chars-long!!}
+      JWT_ACCESS_EXPIRES_IN: ${JWT_ACCESS_EXPIRES_IN:-15m}
+      JWT_REFRESH_EXPIRES_IN: ${JWT_REFRESH_EXPIRES_IN:-7d}
+      COOKIE_SECURE: "false"
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:8080}
+      API_PORT: 3000
+      API_HOST: 0.0.0.0
+      ECOSPHERE_SEED_ON_START: "false"
+      DB_POOL_MAX: ${DB_POOL_MAX:-20}
+      DB_POOL_IDLE_TIMEOUT: ${DB_POOL_IDLE_TIMEOUT:-30}
+      DB_POOL_CONNECT_TIMEOUT: ${DB_POOL_CONNECT_TIMEOUT:-10}
+      DB_PREPARE_STATEMENTS: ${DB_PREPARE_STATEMENTS:-true}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - ecosphere_net
+    restart: unless-stopped
+
+  web:
+    profiles: ["full-stack"]
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.web
+      args:
+        VITE_API_URL: /api/v1
+    container_name: ecosphere-web-dev
+    networks:
+      - ecosphere_net
+    restart: unless-stopped
+
+  nginx:
+    profiles: ["full-stack"]
+    image: nginx:1.27-alpine
+    container_name: ecosphere-nginx-dev
+    ports:
+      - "${NGINX_HTTP_PORT:-8080}:8080"
+    volumes:
+      - ./infra/nginx/nginx.development.conf:/etc/nginx/nginx.conf:ro
+      - ./infra/nginx/locations.conf:/etc/nginx/conf.d/locations.conf:ro
+      - ./infra/nginx/snippets:/etc/nginx/snippets:ro
+    depends_on:
+      - api
+      - web
+    networks:
+      - ecosphere_net
+    restart: unless-stopped

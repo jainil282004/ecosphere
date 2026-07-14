@@ -1,0 +1,2 @@
+# Deprecated — production stack is defined in root docker-compose.yml
+# This overlay is kept for reference only. Use: pnpm up:production

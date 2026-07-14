@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#050710" />
+    <meta
+      name="description"
+      content="EcoSphere — the enterprise ESG management platform for carbon accounting, social impact, governance compliance, and gamified employee engagement."
+    />
+    <title>EcoSphere · Enterprise ESG Management</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Sora:wght@500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body class="bg-surface-950 text-slate-100 antialiased">
+    <div id="root"></div>
+    <script>
+      window.addEventListener('error', (event) => {
+        document.body.innerHTML = '<div style="color: red; padding: 20px; font-family: monospace;"><h1>Fatal Error</h1><pre>' + event.error?.stack + '</pre></div>';
+      });
+      window.addEventListener('unhandledrejection', (event) => {
+        document.body.innerHTML = '<div style="color: red; padding: 20px; font-family: monospace;"><h1>Unhandled Promise Rejection</h1><pre>' + (event.reason?.stack || event.reason) + '</pre></div>';
+      });
+    </script>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

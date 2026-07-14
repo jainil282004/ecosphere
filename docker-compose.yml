@@ -1,0 +1,142 @@
+# EcoSphere — Production-grade multi-container stack
+#
+# Services:
+#   ecosphere-db     PostgreSQL (persistent, health-checked, no public ports)
+#   ecosphere-api    NestJS API (waits for DB, runs migrations on start)
+#   ecosphere-nginx  Secure ingress gateway (API proxy + SPA, rate limiting)
+#
+# Internal dependency: ecosphere-redis (required by API job queue)
+#
+# Usage:
+#   cp .env.production.example .env   # set POSTGRES_PASSWORD, JWT secrets
+#   docker compose up -d --build
+#   open http://localhost
+
+name: ecosphere
+
+services:
+  ecosphere-db:
+    image: postgres:16-alpine
+    container_name: ecosphere-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?Set POSTGRES_USER in .env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${POSTGRES_DB:-ecosphere}
+    volumes:
+      - ecosphere_db_data:/var/lib/postgresql/data
+      - ./infra/postgres/postgresql.conf:/etc/postgresql/postgresql.conf:ro
+    command: postgres -c config_file=/etc/postgresql/postgresql.conf
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 15s
+    networks:
+      - ecosphere_internal
+    security_opt:
+      - no-new-privileges:true
+
+  ecosphere-redis:
+    image: redis:7-alpine
+    container_name: ecosphere-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - ecosphere_redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 5s
+    networks:
+      - ecosphere_internal
+    security_opt:
+      - no-new-privileges:true
+
+  ecosphere-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: ecosphere-api:latest
+    container_name: ecosphere-api
+    restart: unless-stopped
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@ecosphere-db:5432/${POSTGRES_DB:-ecosphere}
+      REDIS_URL: redis://ecosphere-redis:6379
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:?Set JWT_ACCESS_SECRET in .env}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?Set JWT_REFRESH_SECRET in .env}
+      JWT_ACCESS_EXPIRES_IN: ${JWT_ACCESS_EXPIRES_IN:-15m}
+      JWT_REFRESH_EXPIRES_IN: ${JWT_REFRESH_EXPIRES_IN:-7d}
+      COOKIE_SECURE: ${COOKIE_SECURE:-true}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost}
+      API_PORT: 3000
+      API_HOST: 0.0.0.0
+      ECOSPHERE_SEED_ON_START: ${ECOSPHERE_SEED_ON_START:-false}
+      DB_POOL_MAX: ${DB_POOL_MAX:-50}
+      DB_POOL_IDLE_TIMEOUT: ${DB_POOL_IDLE_TIMEOUT:-30}
+      DB_POOL_CONNECT_TIMEOUT: ${DB_POOL_CONNECT_TIMEOUT:-10}
+      DB_PREPARE_STATEMENTS: ${DB_PREPARE_STATEMENTS:-true}
+      S3_ENDPOINT: ${S3_ENDPOINT:-}
+      S3_BUCKET: ${S3_BUCKET:-}
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY:-}
+      S3_SECRET_KEY: ${S3_SECRET_KEY:-}
+      S3_REGION: ${S3_REGION:-us-east-1}
+    depends_on:
+      ecosphere-db:
+        condition: service_healthy
+      ecosphere-redis:
+        condition: service_healthy
+    networks:
+      - ecosphere_internal
+    security_opt:
+      - no-new-privileges:true
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 1024M
+
+  ecosphere-nginx:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.nginx
+      args:
+        VITE_API_URL: /api/v1
+    image: ecosphere-nginx:latest
+    container_name: ecosphere-nginx
+    restart: unless-stopped
+    ports:
+      - "${NGINX_HTTP_PORT:-80}:8080"
+      - "${NGINX_HTTPS_PORT:-443}:8443"
+    volumes:
+      - ./infra/nginx/tls:/etc/nginx/tls:ro
+      - ./infra/nginx/ssl.d:/etc/nginx/conf.d/optional:ro
+    depends_on:
+      ecosphere-api:
+        condition: service_healthy
+    networks:
+      - ecosphere_internal
+    security_opt:
+      - no-new-privileges:true
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 256M
+
+networks:
+  ecosphere_internal:
+    driver: bridge
+
+volumes:
+  ecosphere_db_data:
+    name: ecosphere_db_data
+  ecosphere_redis_data:
+    name: ecosphere_redis_data

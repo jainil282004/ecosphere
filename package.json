@@ -1,0 +1,51 @@
+{
+  "name": "ecosphere",
+  "version": "1.0.0",
+  "private": true,
+  "description": "EcoSphere — Enterprise ESG Management Platform",
+  "scripts": {
+    "up": "node scripts/ecosphere.mjs development up",
+    "up:staging": "node scripts/ecosphere.mjs staging up",
+    "up:production": "node scripts/ecosphere.mjs production up",
+    "up:full": "node scripts/ecosphere.mjs development full",
+    "down": "node scripts/ecosphere.mjs development down",
+    "down:staging": "node scripts/ecosphere.mjs staging down",
+    "down:production": "node scripts/ecosphere.mjs production down",
+    "setup": "node scripts/ecosphere.mjs development setup",
+    "infra:up": "node scripts/ecosphere.mjs development infra",
+    "dev": "pnpm --filter \"@ecosphere/api\" --filter \"@ecosphere/web\" run --parallel dev",
+    "dev:api": "pnpm --filter @ecosphere/api dev",
+    "dev:web": "pnpm --filter @ecosphere/web dev",
+    "start:prod": "pnpm build && pnpm --filter @ecosphere/api start",
+    "build": "pnpm run -r build",
+    "db:generate": "pnpm --filter @ecosphere/db generate",
+    "db:migrate": "pnpm --filter @ecosphere/db migrate",
+    "db:typeorm:migrate": "pnpm --filter @ecosphere/db-typeorm migrate",
+    "db:typeorm:status": "pnpm --filter @ecosphere/db-typeorm migration:show",
+    "db:wait": "pnpm --filter @ecosphere/db wait",
+    "db:bootstrap": "pnpm --filter @ecosphere/db bootstrap",
+    "db:seed": "pnpm --filter @ecosphere/db seed",
+    "db:studio": "pnpm --filter @ecosphere/db studio",
+    "lint": "pnpm run -r lint",
+    "typecheck": "pnpm run -r typecheck"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
+  },
+  "packageManager": "pnpm@9.15.0",
+  "dependencies": {
+    "@hookform/resolvers": "^3.10.0",
+    "@tanstack/react-query": "^5.101.2",
+    "lucide-react": "^1.24.0",
+    "react-hook-form": "^7.81.0",
+    "react-router-dom": "^7.18.1",
+    "recharts": "^3.9.2",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "autoprefixer": "^10.5.2",
+    "postcss": "^8.5.17",
+    "tailwindcss": "^4.3.2"
+  }
+}
