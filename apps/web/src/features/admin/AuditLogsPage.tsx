@@ -10,9 +10,10 @@ import type { AuditLogRecord } from '@ecosphere/shared';
 export function AuditLogsPage() {
   const { orgId } = useOrgContext();
   const { data: logs, isLoading } = useQuery({
-    queryKey: [...queryKeys.governance.auditLogs(orgId), 'all'],
+    queryKey: [...queryKeys.governance.auditLogs(orgId!), 'all'],
     queryFn: () =>
       apiClient<{ data: AuditLogRecord[]; meta: any }>(`/orgs/${orgId}/governance/audit-logs?limit=50`),
+    enabled: Boolean(orgId),
   });
 
   if (isLoading) return <LoadingScreen />;
