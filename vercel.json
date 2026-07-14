@@ -1,0 +1,5 @@
+{
+  "buildCommand": "pnpm --filter @ecosphere/web build",
+  "outputDirectory": "apps/web/dist",
+  "framework": "vite"
+}
