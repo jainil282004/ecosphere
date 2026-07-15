@@ -220,20 +220,7 @@ export class ReportExportService {
     return Buffer.from(arrayBuffer);
   }
 
-  private async fetchChartImage(config: any): Promise<Buffer | null> {
-    const url = `https://quickchart.io/chart?w=500&h=300&c=${encodeURIComponent(JSON.stringify(config))}`;
-    return new Promise((resolve) => {
-      https.get(url, (res) => {
-        if (res.statusCode !== 200) {
-          resolve(null);
-          return;
-        }
-        const data: Buffer[] = [];
-        res.on('data', (chunk) => data.push(chunk));
-        res.on('end', () => resolve(Buffer.concat(data)));
-      }).on('error', () => resolve(null));
-    });
-  }
+  // QuickChart dependency removed for stability
 
   private async toPdf(dataset: EsgReportDataset): Promise<Buffer> {
     return new Promise(async (resolve, reject) => {
@@ -262,57 +249,13 @@ export class ReportExportService {
         doc.x = 48;
         doc.y = startY + 100;
 
-        // 2. Fetch Charts Concurrently
-        const [carbonTrendImg, scopeImg, scoresImg] = await Promise.all([
-          this.fetchChartImage({
-            type: 'line',
-            data: {
-              labels: dataset.environmental.carbonTrend.map((t) => t.month),
-              datasets: [{
-                label: 'Carbon Emissions (kg CO2e)',
-                data: dataset.environmental.carbonTrend.map((t) => t.totalCo2e),
-                borderColor: '#0ea5e9',
-                backgroundColor: 'rgba(14, 165, 233, 0.1)',
-                fill: true,
-                borderWidth: 2,
-              }]
-            },
-            options: { plugins: { legend: { display: false }, title: { display: true, text: 'Carbon Emissions Trend' } } }
-          }),
-          this.fetchChartImage({
-            type: 'doughnut',
-            data: {
-              labels: ['Scope 1', 'Scope 2', 'Scope 3'],
-              datasets: [{
-                data: [dataset.environmental.scope1Kg, dataset.environmental.scope2Kg, dataset.environmental.scope3Kg],
-                backgroundColor: ['#10b981', '#3b82f6', '#f59e0b']
-              }]
-            },
-            options: { plugins: { title: { display: true, text: 'Emissions by Scope' } } }
-          }),
-          dataset.scores ? this.fetchChartImage({
-            type: 'radar',
-            data: {
-              labels: ['Environmental', 'Social', 'Governance'],
-              datasets: [{
-                label: 'Score',
-                data: [dataset.scores.environmental, dataset.scores.social, dataset.scores.governance],
-                borderColor: '#8b5cf6',
-                backgroundColor: 'rgba(139, 92, 246, 0.2)',
-                borderWidth: 2,
-              }]
-            },
-            options: { scale: { ticks: { min: 0, max: 100 } }, plugins: { title: { display: true, text: 'ESG Composite Breakdown' } } }
-          }) : Promise.resolve(null)
-        ]);
+        // 2. Fetch Charts Concurrently (Removed)
+        // Charts removed to ensure PDF generation stability without external dependencies.
 
         // 3. Scores
-        if (scoresImg && dataset.scores) {
+        if (dataset.scores) {
           doc.fontSize(16).fillColor('#0f172a').text('Composite ESG Performance', { underline: true });
           doc.moveDown(1);
-          
-          doc.image(scoresImg, (doc.page.width - 320) / 2, doc.y, { width: 320 });
-          doc.y += 210; // approximate height
           
           doc.fontSize(14).fillColor('#8b5cf6').text(`Composite Score: ${dataset.scores.composite.toFixed(1)} / 100`, { align: 'center' });
           doc.moveDown(2);
@@ -322,16 +265,6 @@ export class ReportExportService {
         doc.addPage();
         doc.fontSize(16).fillColor('#0f172a').text('Environmental Metrics', { underline: true });
         doc.moveDown(1);
-        
-        if (carbonTrendImg) {
-          doc.image(carbonTrendImg, (doc.page.width - 400) / 2, doc.y, { width: 400 });
-          doc.y += 260;
-        }
-
-        if (scopeImg) {
-          doc.image(scopeImg, (doc.page.width - 320) / 2, doc.y, { width: 320 });
-          doc.y += 220;
-        }
         
         doc.fontSize(11).fillColor('#475569');
         doc.text(`Total Carbon: ${dataset.environmental.totalCarbonKg.toFixed(2)} kg CO2e`);

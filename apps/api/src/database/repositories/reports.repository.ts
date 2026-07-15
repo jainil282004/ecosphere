@@ -11,50 +11,67 @@ import {
   reports,
   userRoles,
 } from '@ecosphere/db';
+import type { DashboardFilters } from '@ecosphere/shared';
 import { BaseRepository } from './base.repository';
+import { applyDateFilter } from './filters.helper';
 
 @Injectable()
 export class ReportsRepository extends BaseRepository {
-  getApprovedCsrHours(orgId: string) {
+  getApprovedCsrHours(orgId: string, filters?: DashboardFilters) {
+    const conditions = [eq(csrActivities.organizationId, orgId), eq(csrActivities.status, 'approved')];
+    const dateFilter = applyDateFilter(csrActivities.createdAt, filters);
+    if (dateFilter) conditions.push(dateFilter);
+
     return this.db
       .select({
         total: sql<string>`COALESCE(SUM(${csrActivities.hoursContributed}), 0)`,
       })
       .from(csrActivities)
-      .where(and(eq(csrActivities.organizationId, orgId), eq(csrActivities.status, 'approved')));
+      .where(and(...conditions));
   }
 
-  countOpenComplianceIssues(orgId: string) {
+  countOpenComplianceIssues(orgId: string, filters?: DashboardFilters) {
+    const conditions = [
+      eq(complianceIssues.organizationId, orgId),
+      sql`${complianceIssues.status} IN ('open', 'in_progress', 'escalated')`,
+    ];
+    const dateFilter = applyDateFilter(complianceIssues.createdAt, filters);
+    if (dateFilter) conditions.push(dateFilter);
+
     return this.db
       .select({ value: count() })
       .from(complianceIssues)
-      .where(
-        and(
-          eq(complianceIssues.organizationId, orgId),
-          sql`${complianceIssues.status} IN ('open', 'in_progress', 'escalated')`,
-        ),
-      );
+      .where(and(...conditions));
   }
 
-  countPendingApprovals(orgId: string) {
+  countPendingApprovals(orgId: string, filters?: DashboardFilters) {
+    const conditions = [eq(approvals.organizationId, orgId), eq(approvals.status, 'submitted')];
+    const dateFilter = applyDateFilter(approvals.createdAt, filters);
+    if (dateFilter) conditions.push(dateFilter);
+
     return this.db
       .select({ value: count() })
       .from(approvals)
-      .where(and(eq(approvals.organizationId, orgId), eq(approvals.status, 'submitted')));
+      .where(and(...conditions));
   }
 
-  countEmployees(orgId: string) {
+  countEmployees(orgId: string, filters?: DashboardFilters) {
+    const conditions = [eq(userRoles.organizationId, orgId), eq(userRoles.role, 'employee')];
     return this.db
       .select({ value: count() })
       .from(userRoles)
-      .where(and(eq(userRoles.organizationId, orgId), eq(userRoles.role, 'employee')));
+      .where(and(...conditions));
   }
 
-  countActiveCsrParticipants(orgId: string) {
+  countActiveCsrParticipants(orgId: string, filters?: DashboardFilters) {
+    const conditions = [eq(csrActivities.organizationId, orgId), eq(csrActivities.status, 'approved')];
+    const dateFilter = applyDateFilter(csrActivities.createdAt, filters);
+    if (dateFilter) conditions.push(dateFilter);
+
     return this.db
       .select({ value: sql<number>`COUNT(DISTINCT ${csrActivities.submittedById})` })
       .from(csrActivities)
-      .where(and(eq(csrActivities.organizationId, orgId), eq(csrActivities.status, 'approved')));
+      .where(and(...conditions));
   }
 
   getLatestScoreSnapshot(orgId: string) {
@@ -147,16 +164,18 @@ export class ReportsRepository extends BaseRepository {
       .returning();
   }
 
-  getCarbonTrend(orgId: string) {
+  getCarbonTrend(orgId: string, filters?: DashboardFilters) {
+    const conditions = [eq(carbonTransactions.organizationId, orgId), eq(carbonTransactions.status, 'approved')];
+    const dateFilter = applyDateFilter(carbonTransactions.activityDate, filters);
+    if (dateFilter) conditions.push(dateFilter);
+
     return this.db
       .select({
         month: sql<string>`TO_CHAR(${carbonTransactions.activityDate}, 'YYYY-MM')`,
         totalCo2e: sql<string>`COALESCE(SUM(${carbonTransactions.co2eKg}), 0)`,
       })
       .from(carbonTransactions)
-      .where(
-        and(eq(carbonTransactions.organizationId, orgId), eq(carbonTransactions.status, 'approved')),
-      )
+      .where(and(...conditions))
       .groupBy(sql`TO_CHAR(${carbonTransactions.activityDate}, 'YYYY-MM')`)
       .orderBy(sql`TO_CHAR(${carbonTransactions.activityDate}, 'YYYY-MM')`);
   }

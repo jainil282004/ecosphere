@@ -26,6 +26,7 @@
     "wait": "tsx src/wait-for-postgres.ts",
     "bootstrap": "tsx src/bootstrap.ts",
     "seed": "tsx src/seed.ts",
+    "seed:historical": "tsx src/seed-historical.ts",
     "studio": "drizzle-kit studio",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },

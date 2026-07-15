@@ -11,7 +11,9 @@ import {
   xpLedger,
 } from '@ecosphere/db';
 import type { DbExecutor } from '@ecosphere/db';
+import type { DashboardFilters } from '@ecosphere/shared';
 import { BaseRepository } from './base.repository';
+import { applyDateFilter } from './filters.helper';
 
 @Injectable()
 export class LedgerRepository extends BaseRepository {
@@ -119,12 +121,16 @@ export class LedgerRepository extends BaseRepository {
       .limit(20);
   }
 
-  getCarbonLedgerTotal(orgId: string) {
+  getCarbonLedgerTotal(orgId: string, filters?: DashboardFilters) {
+    const conditions = [eq(carbonLedger.organizationId, orgId)];
+    const dateFilter = applyDateFilter(carbonLedger.recordedAt, filters);
+    if (dateFilter) conditions.push(dateFilter);
+
     return this.db
       .select({
         total: sql<string>`COALESCE(SUM(CASE WHEN ${carbonLedger.entryType} = 'credit' THEN ${carbonLedger.co2eKg} ELSE -${carbonLedger.co2eKg} END), 0)`,
       })
       .from(carbonLedger)
-      .where(eq(carbonLedger.organizationId, orgId));
+      .where(and(...conditions));
   }
 }

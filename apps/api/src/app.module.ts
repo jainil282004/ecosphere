@@ -1,4 +1,7 @@
 import { Module } from '@nestjs/common';
+import { AiModule } from './modules/ai/ai.module';
+import { WorkflowsModule } from './modules/workflows/workflows.module';
+import { VaultModule } from './modules/vault/vault.module';
 import { APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
 import { ConfigModule } from '@nestjs/config';
 import { join } from 'path';
@@ -21,6 +24,7 @@ import { RepositoriesModule } from './database/repositories/repositories.module'
 import { DatabaseModule } from './database/database.module';
 import { JobsModule } from './modules/jobs/jobs.module';
 import { HealthModule } from './modules/health/health.module';
+import { AuditModule } from './modules/audit/audit.module';
 
 @Module({
   imports: [
@@ -49,6 +53,10 @@ import { HealthModule } from './modules/health/health.module';
     NotificationsModule,
     JobsModule,
     HealthModule,
+    AiModule,
+    WorkflowsModule,
+    VaultModule,
+    AuditModule,
   ],
   providers: [
     {

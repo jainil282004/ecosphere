@@ -760,7 +760,21 @@ export const auditLogs = pgTable(
       onDelete: 'set null',
     }),
     actorUserId: uuid('actor_user_id').references(() => users.id, { onDelete: 'set null' }),
-    action: varchar('action', { length: 150 }).notNull(),
+    action: varchar('action', { length: 255 }).notNull(),
+
+  module: varchar('module', { length: 100 }),
+  browser: varchar('browser', { length: 100 }),
+  os: varchar('os', { length: 100 }),
+  device: varchar('device', { length: 100 }),
+  location: varchar('location', { length: 255 }),
+  sessionId: varchar('session_id', { length: 100 }),
+  requestId: varchar('request_id', { length: 100 }),
+  oldValue: jsonb('old_value'),
+  newValue: jsonb('new_value'),
+  success: boolean('success').notNull().default(true),
+  severity: varchar('severity', { length: 20 }).notNull().default('info'),
+  executionTime: integer('execution_time'),
+
     entityType: varchar('entity_type', { length: 100 }).notNull(),
     entityId: uuid('entity_id'),
     metadata: jsonb('metadata'),
@@ -1059,4 +1073,285 @@ export const auditLogsRelations = relations(auditLogs, ({ one }) => ({
     fields: [auditLogs.actorUserId],
     references: [users.id],
   }),
+}));
+
+
+export const auditExports = pgTable('audit_exports', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  organizationId: uuid('organization_id').notNull().references(() => organizations.id, { onDelete: 'cascade' }),
+  requestedById: uuid('requested_by_id').notNull().references(() => users.id),
+  status: varchar('status', { length: 50 }).notNull(),
+  fileUrl: text('file_url'),
+  expiresAt: timestamp('expires_at', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const loginHistory = pgTable('login_history', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  organizationId: uuid('organization_id').references(() => organizations.id),
+  status: varchar('status', { length: 50 }).notNull(),
+  ipAddress: varchar('ip_address', { length: 45 }),
+  userAgent: text('user_agent'),
+  failureReason: text('failure_reason'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const retentionPolicies = pgTable('retention_policies', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  organizationId: uuid('organization_id').notNull().references(() => organizations.id, { onDelete: 'cascade' }),
+  module: varchar('module', { length: 100 }).notNull(),
+  retentionDays: integer('retention_days').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const securityEvents = pgTable('security_events', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  organizationId: uuid('organization_id').notNull().references(() => organizations.id, { onDelete: 'cascade' }),
+  userId: uuid('user_id').references(() => users.id),
+  eventType: varchar('event_type', { length: 100 }).notNull(),
+  severity: varchar('severity', { length: 20 }).notNull(),
+  ipAddress: varchar('ip_address', { length: 45 }),
+  details: jsonb('details'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const sessionHistory = pgTable('session_history', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  sessionId: varchar('session_id', { length: 100 }).notNull(),
+  startedAt: timestamp('started_at', { withTimezone: true }).notNull().defaultNow(),
+  endedAt: timestamp('ended_at', { withTimezone: true }),
+  endReason: varchar('end_reason', { length: 50 }),
+  ipAddress: varchar('ip_address', { length: 45 }),
+  deviceInfo: jsonb('device_info'),
+});
+
+
+
+// -----------------
+// VAULT
+// -----------------
+export const vaultDocumentStatusEnum = pgEnum('document_status', ['draft', 'pending_review', 'approved', 'rejected', 'archived', 'published']);
+
+export const documentFolders = pgTable('document_folders', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  organizationId: uuid('organization_id').notNull().references(() => organizations.id, { onDelete: 'cascade' }),
+  name: varchar('name', { length: 255 }).notNull(),
+  parentId: uuid('parent_id'),
+  createdById: uuid('created_by_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const documents = pgTable('documents', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  organizationId: uuid('organization_id').notNull().references(() => organizations.id, { onDelete: 'cascade' }),
+  title: varchar('title', { length: 255 }).notNull(),
+  description: text('description'),
+  category: varchar('category', { length: 100 }),
+  departmentId: uuid('department_id').references(() => departments.id, { onDelete: 'set null' }),
+  facility: varchar('facility', { length: 200 }),
+  ownerId: uuid('owner_id').references(() => users.id, { onDelete: 'set null' }),
+  folderId: uuid('folder_id').references(() => documentFolders.id, { onDelete: 'set null' }),
+  status: vaultDocumentStatusEnum('status').notNull().default('draft'),
+  retentionPeriodDays: integer('retention_period_days'),
+  expiryDate: timestamp('expiry_date', { withTimezone: true }),
+  isArchived: boolean('is_archived').notNull().default(false),
+  uploadedById: uuid('uploaded_by_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const documentVersions = pgTable('document_versions', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  documentId: uuid('document_id').notNull().references(() => documents.id, { onDelete: 'cascade' }),
+  versionNumber: integer('version_number').notNull(),
+  fileKey: text('file_key').notNull(),
+  originalFilename: varchar('original_filename', { length: 255 }).notNull(),
+  fileSize: integer('file_size').notNull(),
+  mimeType: varchar('mime_type', { length: 100 }).notNull(),
+  ocrText: text('ocr_text'),
+  changesSummary: text('changes_summary'),
+  uploadedById: uuid('uploaded_by_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  uploadedAt: timestamp('uploaded_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const documentShares = pgTable('document_shares', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  documentId: uuid('document_id').notNull().references(() => documents.id, { onDelete: 'cascade' }),
+  sharedByUserId: uuid('shared_by_user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  sharedWithUserId: uuid('shared_with_user_id').references(() => users.id, { onDelete: 'cascade' }),
+  sharedWithDeptId: uuid('shared_with_dept_id').references(() => departments.id, { onDelete: 'cascade' }),
+  sharedWithRole: varchar('shared_with_role', { length: 50 }),
+  shareType: varchar('share_type', { length: 20 }).notNull(),
+  expiresAt: timestamp('expires_at', { withTimezone: true }),
+  passwordHash: text('password_hash'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const documentTags = pgTable('document_tags', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  documentId: uuid('document_id').notNull().references(() => documents.id, { onDelete: 'cascade' }),
+  tag: varchar('tag', { length: 50 }).notNull(),
+});
+
+export const documentComments = pgTable('document_comments', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  documentId: uuid('document_id').notNull().references(() => documents.id, { onDelete: 'cascade' }),
+  authorId: uuid('author_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  parentId: uuid('parent_id'),
+  content: text('content').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const documentAuditLogs = pgTable('document_audit_logs', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  documentId: uuid('document_id').notNull().references(() => documents.id, { onDelete: 'cascade' }),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  action: varchar('action', { length: 100 }).notNull(),
+  ipAddress: varchar('ip_address', { length: 45 }),
+  details: text('details'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const documentFavorites = pgTable('document_favorites', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  documentId: uuid('document_id').notNull().references(() => documents.id, { onDelete: 'cascade' }),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+
+
+// WORKFLOWS
+// -----------------
+export const workflowPriorityEnum = pgEnum('workflow_priority', ['low', 'medium', 'high', 'urgent']);
+export const workflowStatusEnum = pgEnum('workflow_status', ['draft', 'pending', 'in_review', 'approved', 'rejected', 'completed', 'cancelled']);
+
+export const workflowTemplates = pgTable('workflow_templates', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  organizationId: uuid('organization_id').notNull().references(() => organizations.id, { onDelete: 'cascade' }),
+  title: varchar('title', { length: 200 }).notNull(),
+  description: text('description'),
+  isActive: boolean('is_active').notNull().default(true),
+  createdById: uuid('created_by_id').notNull().references(() => users.id),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const workflows = pgTable('workflows', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  organizationId: uuid('organization_id').notNull().references(() => organizations.id, { onDelete: 'cascade' }),
+  templateId: uuid('template_id').references(() => workflowTemplates.id),
+  title: varchar('title', { length: 200 }).notNull(),
+  description: text('description'),
+  status: workflowStatusEnum('status').notNull().default('draft'),
+  priority: workflowPriorityEnum('priority').notNull().default('medium'),
+  departmentId: uuid('department_id').references(() => departments.id),
+  ownerId: uuid('owner_id').notNull().references(() => users.id),
+  dueDate: timestamp('due_date', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  completedAt: timestamp('completed_at', { withTimezone: true }),
+}, (table) => [
+  index('workflows_org_status_idx').on(table.organizationId, table.status),
+  index('workflows_owner_idx').on(table.ownerId),
+]);
+
+export const workflowSteps = pgTable('workflow_steps', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  workflowId: uuid('workflow_id').notNull().references(() => workflows.id, { onDelete: 'cascade' }),
+  stepOrder: integer('step_order').notNull(),
+  title: varchar('title', { length: 200 }).notNull(),
+  status: approvalStageStatusEnum('status').notNull().default('pending'),
+  requiredRole: roleEnum('required_role'),
+  decidedById: uuid('decided_by_id').references(() => users.id),
+  decisionComment: text('decision_comment'),
+  decidedAt: timestamp('decided_at', { withTimezone: true }),
+  dueDate: timestamp('due_date', { withTimezone: true }),
+}, (table) => [
+  uniqueIndex('workflow_steps_order_idx').on(table.workflowId, table.stepOrder),
+]);
+
+export const workflowAssignments = pgTable('workflow_assignments', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  workflowId: uuid('workflow_id').notNull().references(() => workflows.id, { onDelete: 'cascade' }),
+  stepId: uuid('step_id').notNull().references(() => workflowSteps.id, { onDelete: 'cascade' }),
+  assignedUserId: uuid('assigned_user_id').references(() => users.id),
+  assignedDepartmentId: uuid('assigned_department_id').references(() => departments.id),
+  assignedRole: roleEnum('assigned_role'),
+  assignedAt: timestamp('assigned_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const workflowComments = pgTable('workflow_comments', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  workflowId: uuid('workflow_id').notNull().references(() => workflows.id, { onDelete: 'cascade' }),
+  authorId: uuid('author_id').notNull().references(() => users.id),
+  content: text('content').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  index('workflow_comments_workflow_idx').on(table.workflowId),
+]);
+
+export const workflowHistory = pgTable('workflow_history', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  workflowId: uuid('workflow_id').notNull().references(() => workflows.id, { onDelete: 'cascade' }),
+  actorId: uuid('actor_id').notNull().references(() => users.id),
+  action: varchar('action', { length: 100 }).notNull(),
+  details: jsonb('details'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+// Relations
+
+
+export const workflowRelations = relations(workflows, ({ one, many }) => ({
+  template: one(workflowTemplates, { fields: [workflows.templateId], references: [workflowTemplates.id] }),
+  owner: one(users, { fields: [workflows.ownerId], references: [users.id] }),
+  department: one(departments, { fields: [workflows.departmentId], references: [departments.id] }),
+  steps: many(workflowSteps),
+  comments: many(workflowComments),
+  history: many(workflowHistory),
+  assignments: many(workflowAssignments),
+}));
+
+export const workflowStepsRelations = relations(workflowSteps, ({ one, many }) => ({
+  workflow: one(workflows, { fields: [workflowSteps.workflowId], references: [workflows.id] }),
+  decidedBy: one(users, { fields: [workflowSteps.decidedById], references: [users.id] }),
+  assignments: many(workflowAssignments),
+}));
+
+export const workflowAssignmentsRelations = relations(workflowAssignments, ({ one }) => ({
+  workflow: one(workflows, { fields: [workflowAssignments.workflowId], references: [workflows.id] }),
+  step: one(workflowSteps, { fields: [workflowAssignments.stepId], references: [workflowSteps.id] }),
+  assignedUser: one(users, { fields: [workflowAssignments.assignedUserId], references: [users.id] }),
+  assignedDepartment: one(departments, { fields: [workflowAssignments.assignedDepartmentId], references: [departments.id] }),
+}));
+
+export const workflowCommentsRelations = relations(workflowComments, ({ one }) => ({
+  workflow: one(workflows, { fields: [workflowComments.workflowId], references: [workflows.id] }),
+  author: one(users, { fields: [workflowComments.authorId], references: [users.id] }),
+}));
+
+export const workflowHistoryRelations = relations(workflowHistory, ({ one }) => ({
+  workflow: one(workflows, { fields: [workflowHistory.workflowId], references: [workflows.id] }),
+  actor: one(users, { fields: [workflowHistory.actorId], references: [users.id] }),
+}));
+
+
+
+
+
+export const documentsRelations = relations(documents, ({ one, many }) => ({
+  folder: one(documentFolders, { fields: [documents.folderId], references: [documentFolders.id] }),
+  uploadedBy: one(users, { fields: [documents.uploadedById], references: [users.id] }),
+  versions: many(documentVersions),
+  shares: many(documentShares),
+  tags: many(documentTags),
+  comments: many(documentComments),
+  favorites: many(documentFavorites),
+  auditLogs: many(documentAuditLogs),
 }));

@@ -6,6 +6,8 @@ import {
   ChevronDown,
   Command,
   FileDown,
+  GitMerge,
+  FolderLock,
   HeartHandshake,
   LayoutDashboard,
   LogOut,
@@ -16,8 +18,9 @@ import {
   Sparkles,
   User,
   X,
+  Bell,
 } from 'lucide-react';
-import { NotificationDropdown } from '@/components/ui';
+import { NotificationBell } from '@/features/notifications/components/NotificationBell';
 import { AIAssistant } from '@/components/ui';
 import clsx from 'clsx';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -47,6 +50,9 @@ const navItems: NavItem[] = [
   { to: 'dei', label: 'Diversity & Inclusion', icon: Scale, permission: 'view_reports', section: 'modules' },
   { to: 'governance', label: 'Governance', icon: Shield, permission: 'manage_compliance', section: 'modules' },
   { to: 'gamification', label: 'Gamification', icon: Award, permission: 'view_own_gamification', section: 'modules' },
+  { to: 'workflows', label: 'Workflows & Approvals', icon: GitMerge, permission: 'view_reports', section: 'modules' },
+  { to: 'vault', label: 'Evidence Vault', icon: FolderLock, permission: 'manage_compliance', section: 'modules' },
+  { to: 'notifications', label: 'Notification Center', icon: Bell, permission: 'view_reports', section: 'modules' },
   { to: 'reports', label: 'Reports & Compliance', icon: FileDown, permission: 'view_reports', section: 'admin' },
   { to: 'admin', label: 'Administration', icon: Building2, permission: 'manage_org', section: 'admin' },
 ];
@@ -260,7 +266,7 @@ export function OrgLayout() {
               </button>
             </div>
             <div className="flex items-center gap-2 pr-4 lg:pr-8">
-              {orgId && <NotificationDropdown orgId={orgId} />}
+              {orgId && <NotificationBell />}
               <div className="relative" ref={userMenuRef}>
                 <button
                   type="button"

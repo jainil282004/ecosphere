@@ -10,6 +10,9 @@ import { NotificationsRepository } from './notifications.repository';
 import { ReportsRepository } from './reports.repository';
 import { RewardsRepository } from './rewards.repository';
 import { TenantRepository } from './tenant.repository';
+import { WorkflowRepository } from './workflow.repository';
+import { VaultRepository } from './vault.repository';
+import { AuditRepository } from './audit.repository';
 
 const repositories = [
   AuthRepository,
@@ -23,6 +26,9 @@ const repositories = [
   RewardsRepository,
   ReportsRepository,
   NotificationsRepository,
+  WorkflowRepository,
+  VaultRepository,
+  AuditRepository,
 ];
 
 @Global()
@@ -44,4 +50,7 @@ export {
   ReportsRepository,
   RewardsRepository,
   TenantRepository,
+  AuditRepository,
+  VaultRepository,
+  WorkflowRepository,
 };

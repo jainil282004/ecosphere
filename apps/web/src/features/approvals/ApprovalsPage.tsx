@@ -56,6 +56,10 @@ export function ApprovalsPage() {
       await queryClient.invalidateQueries({ queryKey: queryKeys.gamification.profile(orgId!) });
       await queryClient.invalidateQueries({ queryKey: queryKeys.gamification.leaderboard(orgId!) });
     },
+    onError: (error) => {
+      console.error('Decision failed:', error);
+      alert(error instanceof Error ? error.message : 'Failed to save decision.');
+    },
   });
 
   return (

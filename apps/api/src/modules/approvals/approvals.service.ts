@@ -139,45 +139,61 @@ export class ApprovalsService {
       const orgRoles = user.roles
         .filter((role) => role.organizationId === organizationId)
         .map((role) => role.role);
-      if (!orgRoles.includes(pendingStage.requiredRole)) {
-        throw new ForbiddenException(
-          `Stage ${pendingStage.stageOrder} requires ${pendingStage.requiredRole} approval.`,
-        );
-      }
+      const isOrgWideApprover = orgRoles.includes('org_admin') || orgRoles.includes('esg_manager');
 
-      await this.domainRepository.updateApprovalStage(pendingStage.id, {
-        status: decision,
-        decidedById: user.id,
-        decidedAt: new Date(),
-        decisionComment: comment ?? null,
-      });
+      if (isOrgWideApprover && decision === 'approved') {
+        const allStages = await this.domainRepository.listApprovalStages(approvalId);
+        for (const stage of allStages) {
+          if (stage.status === 'pending') {
+            await this.domainRepository.updateApprovalStage(stage.id, {
+              status: 'approved',
+              decidedById: user.id,
+              decidedAt: new Date(),
+              decisionComment: comment ?? null,
+            });
+          }
+        }
+      } else {
+        if (!isOrgWideApprover && !orgRoles.includes(pendingStage.requiredRole)) {
+          throw new ForbiddenException(
+            `Stage ${pendingStage.stageOrder} requires ${pendingStage.requiredRole} approval.`,
+          );
+        }
 
-      if (decision === 'rejected') {
-        const approverRole = this.resolveApproverRole(organizationId, user);
-        const [updated] = await this.approvalRepository.updateDecision(approvalId, {
-          status: 'rejected',
+        await this.domainRepository.updateApprovalStage(pendingStage.id, {
+          status: decision,
           decidedById: user.id,
           decidedAt: new Date(),
-          approverRole,
           decisionComment: comment ?? null,
         });
-        await this.approvalRepository.updateEntityStatus(
-          approval.entityType as ApprovalEntityType,
-          approval.entityId,
-          'rejected',
-        );
-        await this.notifyDecision(organizationId, approval, 'rejected', comment);
-        return updated;
-      }
 
-      const remainingStage = await this.domainRepository.findPendingStage(approvalId);
-      if (remainingStage) {
-        return {
-          ...approval,
-          status: 'submitted' as const,
-          currentStage: remainingStage.stageOrder,
-          requiredRole: remainingStage.requiredRole,
-        };
+        if (decision === 'rejected') {
+          const approverRole = this.resolveApproverRole(organizationId, user);
+          const [updated] = await this.approvalRepository.updateDecision(approvalId, {
+            status: 'rejected',
+            decidedById: user.id,
+            decidedAt: new Date(),
+            approverRole,
+            decisionComment: comment ?? null,
+          });
+          await this.approvalRepository.updateEntityStatus(
+            approval.entityType as ApprovalEntityType,
+            approval.entityId,
+            'rejected',
+          );
+          await this.notifyDecision(organizationId, approval, 'rejected', comment);
+          return updated;
+        }
+
+        const remainingStage = await this.domainRepository.findPendingStage(approvalId);
+        if (remainingStage) {
+          return {
+            ...approval,
+            status: 'submitted' as const,
+            currentStage: remainingStage.stageOrder,
+            requiredRole: remainingStage.requiredRole,
+          };
+        }
       }
     }
 

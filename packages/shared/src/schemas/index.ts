@@ -362,3 +362,30 @@ export const exportReportSchema = z.object({
 });
 
 export type ExportReportInput = z.infer<typeof exportReportSchema>;
+
+// Workflows
+
+export const createWorkflowSchema = z.object({
+  title: z.string().min(3).max(200),
+  description: z.string().optional(),
+  templateId: z.string().uuid().optional(),
+  priority: z.enum(['low', 'medium', 'high', 'urgent']).default('medium'),
+  departmentId: z.string().uuid().optional(),
+  dueDate: z.string().datetime().optional(),
+});
+
+export type CreateWorkflowInput = z.infer<typeof createWorkflowSchema>;
+
+export const transitionWorkflowStepSchema = z.object({
+  decision: z.enum(['approved', 'rejected']),
+  comment: z.string().optional(),
+});
+
+export type TransitionWorkflowStepInput = z.infer<typeof transitionWorkflowStepSchema>;
+
+export const addWorkflowCommentSchema = z.object({
+  content: z.string().min(1).max(2000),
+});
+
+export type AddWorkflowCommentInput = z.infer<typeof addWorkflowCommentSchema>;
+

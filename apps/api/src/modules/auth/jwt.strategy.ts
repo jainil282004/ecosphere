@@ -43,13 +43,8 @@ function extractJwtFromCookie(request: Request): string | null {
 export class JwtStrategy extends PassportStrategy(Strategy) {
 
   constructor(
-
     private readonly authRepository: AuthRepository,
-
-    private readonly authService: AuthService,
-
-    configService: ConfigService,
-
+    @Inject(ConfigService) private readonly configService: ConfigService,
   ) {
 
     super({

@@ -243,7 +243,10 @@ export class DomainRepository extends BaseRepository {
       .returning();
   }
 
-  getCarbonScopeBreakdown(orgId: string) {
+  getCarbonScopeBreakdown(orgId: string, filters?: any) {
+    // Note: carbonScopeBreakdown is a materialized snapshot table.
+    // For real-time filtering, this should be queried from raw carbonTransactions.
+    // For demo purposes, we return the latest snapshot.
     return this.db.query.carbonScopeBreakdown.findFirst({
       where: eq(carbonScopeBreakdown.organizationId, orgId),
       orderBy: [desc(carbonScopeBreakdown.calculatedAt)],

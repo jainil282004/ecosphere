@@ -30,14 +30,25 @@ export class ReportsController {
 
   @Get('dashboard')
   @RequirePermissions('view_reports')
-  dashboard(@Param('orgId') orgId: string) {
-    return this.reportsService.getDashboardMetrics(orgId);
+  dashboard(
+    @Param('orgId') orgId: string,
+    @Query('range') range?: string,
+    @Query('department') department?: string,
+    @Query('facility') facility?: string,
+    @Query('category') category?: string,
+    @Query('status') status?: string,
+  ) {
+    return this.reportsService.getDashboardMetrics(orgId, { range, department, facility, category, status } as any);
   }
 
   @Get('carbon-trend')
   @RequirePermissions('view_reports')
-  carbonTrend(@Param('orgId') orgId: string) {
-    return this.reportsService.getCarbonTrend(orgId);
+  carbonTrend(
+    @Param('orgId') orgId: string,
+    @Query('range') range?: string,
+    @Query('department') department?: string,
+  ) {
+    return this.reportsService.getCarbonTrend(orgId, { range, department } as any);
   }
 
   @Get('variance')

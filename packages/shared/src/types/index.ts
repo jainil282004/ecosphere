@@ -100,6 +100,16 @@ export interface ApprovalRecord {
   sideEffectsAppliedAt: string | null;
 }
 
+export interface DashboardFilters {
+  range?: '7days' | '30days' | '90days' | '12months' | 'custom';
+  startDate?: string;
+  endDate?: string;
+  department?: string;
+  facility?: string;
+  category?: 'Environmental' | 'Social' | 'Governance';
+  status?: 'Healthy' | 'Warning' | 'Critical';
+}
+
 export interface DashboardMetrics {
   totalCarbonKg: number;
   csrHours: number;

@@ -3,6 +3,7 @@ import {
   exportReportSchema,
   type ReportExportFormat,
   triggerReportPipelineSchema,
+  type DashboardFilters,
 } from '@ecosphere/shared';
 import { DomainRepository } from '../../database/repositories/domain.repository';
 import { LedgerRepository } from '../../database/repositories/ledger.repository';
@@ -25,16 +26,16 @@ export class ReportsService {
     private readonly reportStorageService: ReportStorageService,
   ) {}
 
-  async getDashboardMetrics(orgId: string) {
-    const carbonResult = await this.ledgerRepository.getCarbonLedgerTotal(orgId);
-    const csrResult = await this.reportsRepository.getApprovedCsrHours(orgId);
-    const openIssuesResult = await this.reportsRepository.countOpenComplianceIssues(orgId);
-    const pendingApprovalsResult = await this.reportsRepository.countPendingApprovals(orgId);
-    const employeeCountResult = await this.reportsRepository.countEmployees(orgId);
+  async getDashboardMetrics(orgId: string, filters?: DashboardFilters) {
+    const carbonResult = await this.ledgerRepository.getCarbonLedgerTotal(orgId, filters);
+    const csrResult = await this.reportsRepository.getApprovedCsrHours(orgId, filters);
+    const openIssuesResult = await this.reportsRepository.countOpenComplianceIssues(orgId, filters);
+    const pendingApprovalsResult = await this.reportsRepository.countPendingApprovals(orgId, filters);
+    const employeeCountResult = await this.reportsRepository.countEmployees(orgId, filters);
     const activeParticipantsResult =
-      await this.reportsRepository.countActiveCsrParticipants(orgId);
+      await this.reportsRepository.countActiveCsrParticipants(orgId, filters);
     const latestScore = await this.reportsRepository.getLatestScoreSnapshot(orgId);
-    const scopeBreakdown = await this.domainRepository.getCarbonScopeBreakdown(orgId);
+    const scopeBreakdown = await this.domainRepository.getCarbonScopeBreakdown(orgId, filters);
 
     const employeeCount = Number(employeeCountResult[0]?.value ?? 0);
     const activeParticipants = Number(activeParticipantsResult[0]?.value ?? 0);
@@ -139,8 +140,8 @@ export class ReportsService {
     return this.reportsRepository.listReportsWithScores(orgId);
   }
 
-  getCarbonTrend(orgId: string) {
-    return this.reportsRepository.getCarbonTrend(orgId);
+  getCarbonTrend(orgId: string, filters?: DashboardFilters) {
+    return this.reportsRepository.getCarbonTrend(orgId, filters);
   }
 
   listVarianceSnapshots(orgId: string) {

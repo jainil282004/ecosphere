@@ -2,9 +2,14 @@ import { Injectable } from '@nestjs/common';
 import { NotificationsRepository } from '../../database/repositories/notifications.repository';
 import type { NotificationType } from '@ecosphere/shared';
 
+import { NotificationsGateway } from './notifications.gateway';
+
 @Injectable()
 export class NotificationsService {
-  constructor(private readonly notificationsRepository: NotificationsRepository) {}
+  constructor(
+    private readonly notificationsRepository: NotificationsRepository,
+    private readonly notificationsGateway: NotificationsGateway,
+  ) {}
 
   async createNotification(input: {
     organizationId: string;
@@ -25,6 +30,11 @@ export class NotificationsService {
         entityType: input.entityType ?? null,
         entityId: input.entityId ?? null,
       })) ?? [];
+
+    if (record) {
+      // Broadcast real-time notification
+      this.notificationsGateway.sendToUser(record.userId, 'notification.new', record);
+    }
 
     return record ?? null;
   }
