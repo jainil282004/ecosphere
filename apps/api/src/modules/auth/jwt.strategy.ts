@@ -1,4 +1,4 @@
-import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
+import { Inject, Injectable, UnauthorizedException, forwardRef } from '@nestjs/common';
 
 import { PassportStrategy } from '@nestjs/passport';
 
@@ -44,6 +44,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
   constructor(
     private readonly authRepository: AuthRepository,
+    @Inject(forwardRef(() => AuthService)) private readonly authService: AuthService,
     @Inject(ConfigService) private readonly configService: ConfigService,
   ) {
 
