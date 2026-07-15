@@ -64,6 +64,13 @@
       "when": 1784117898308,
       "tag": "0008_brainy_domino",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1784144567580,
+      "tag": "0009_curly_gargoyle",
+      "breakpoints": true
     }
   ]
 }
