@@ -16,7 +16,7 @@
     "dev": "pnpm --filter \"@ecosphere/api\" --filter \"@ecosphere/web\" run --parallel dev",
     "dev:api": "pnpm --filter @ecosphere/api dev",
     "dev:web": "pnpm --filter @ecosphere/web dev",
-    "start:prod": "pnpm build && pnpm --filter @ecosphere/api start",
+    "start:prod": "pnpm db:migrate && pnpm db:typeorm:migrate && pnpm build && pnpm --filter @ecosphere/api start",
     "build": "pnpm run -r build",
     "db:generate": "pnpm --filter @ecosphere/db generate",
     "db:migrate": "pnpm --filter @ecosphere/db migrate",
