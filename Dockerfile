@@ -65,6 +65,8 @@ COPY --from=build --chown=ecosphere:ecosphere /app/packages/shared/dist ./packag
 COPY --chown=ecosphere:ecosphere scripts/docker-entrypoint-api.sh ./scripts/docker-entrypoint-api.sh
 RUN chmod +x ./scripts/docker-entrypoint-api.sh
 
+RUN mkdir -p /app/uploads && chown -R ecosphere:ecosphere /app/uploads
+
 USER ecosphere
 
 EXPOSE 3000
